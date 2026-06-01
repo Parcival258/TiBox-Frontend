@@ -1,4 +1,5 @@
 import { type FormEvent, useState } from 'react'
+import { LoginLoader } from './Loaders'
 
 type LoginPanelProps = {
   isSubmitting: boolean
@@ -17,6 +18,11 @@ export function LoginPanel({ isSubmitting, error, onSubmit }: LoginPanelProps) {
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-slate-950 px-5 text-slate-100">
+      {isSubmitting && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/90 px-5">
+          <LoginLoader label="Ingresando..." />
+        </div>
+      )}
       <form
         className="w-full max-w-sm rounded-lg border border-slate-800 bg-slate-900 p-6"
         onSubmit={handleSubmit}

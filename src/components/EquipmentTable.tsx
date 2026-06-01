@@ -1,40 +1,194 @@
-import type { Equipment } from '../types/inventory'
-import { equipmentStatusLabel } from '../utils/enumLabels'
+import { useEffect, useState, type FormEvent } from 'react'
+import type {
+  Equipment,
+  EquipmentCatalogs,
+  EquipmentFilters,
+  PaginationMeta,
+} from '../types/inventory'
+import { equipmentStatusLabel, ownershipTypeLabel } from '../utils/enumLabels'
 
 type EquipmentTableProps = {
+  canCreate: boolean
+  canDelete: boolean
+  canUpdate: boolean
+  catalogs: EquipmentCatalogs | null
   equipment: Equipment[]
+  filters: EquipmentFilters
+  onChangeFilters: (filters: EquipmentFilters) => void
+  onCreateEquipment: () => void
+  onDeleteEquipment: (equipmentId: string) => void
+  onEditEquipment: (equipment: Equipment) => void
   onSelectEquipment: (equipmentId: string) => void
+  pagination: PaginationMeta | null
   selectedEquipmentId: string | null
 }
 
 export function EquipmentTable({
+  canCreate,
+  canDelete,
+  canUpdate,
+  catalogs,
   equipment,
+  filters,
+  onChangeFilters,
+  onCreateEquipment,
+  onDeleteEquipment,
+  onEditEquipment,
   onSelectEquipment,
+  pagination,
   selectedEquipmentId,
 }: EquipmentTableProps) {
+  const [search, setSearch] = useState(filters.search ?? '')
+
+  useEffect(() => {
+    setSearch(filters.search ?? '')
+  }, [filters.search])
+
+  function updateFilters(nextFilters: EquipmentFilters) {
+    onChangeFilters({
+      ...filters,
+      ...nextFilters,
+      page: nextFilters.page ?? 1,
+    })
+  }
+
+  function applySearch(event: FormEvent) {
+    event.preventDefault()
+    updateFilters({ search: search.trim() || undefined })
+  }
+
+  function clearFilters() {
+    setSearch('')
+    onChangeFilters({
+      orderBy: filters.orderBy,
+      orderDirection: filters.orderDirection,
+      page: 1,
+      perPage: filters.perPage,
+    })
+  }
+
+  const currentPage = pagination?.currentPage ?? filters.page ?? 1
+  const lastPage = pagination?.lastPage ?? 1
+
   return (
     <div className="overflow-hidden rounded-lg border border-slate-800 bg-slate-900">
-      <div className="flex items-center justify-between border-b border-slate-800 px-4 py-3">
+      <div className="flex flex-col gap-3 border-b border-slate-800 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
         <h2 className="text-base font-medium text-white">Inventario de equipos</h2>
-        <span className="text-sm text-slate-400">{equipment.length} registros</span>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-slate-400">
+            {pagination?.total ?? equipment.length} registros
+          </span>
+          {canCreate && (
+            <button
+              className="rounded-md border border-cyan-700 px-3 py-1.5 text-xs font-medium text-cyan-100 transition hover:border-cyan-400 hover:text-white"
+              type="button"
+              onClick={onCreateEquipment}
+            >
+              Nuevo equipo
+            </button>
+          )}
+        </div>
       </div>
+
+      <form
+        className="grid gap-3 border-b border-slate-800 px-4 py-4 md:grid-cols-2 lg:grid-cols-[minmax(220px,1.5fr)_minmax(140px,1fr)_minmax(140px,1fr)_minmax(150px,1fr)_110px_auto]"
+        onSubmit={applySearch}
+      >
+        <label className="block text-sm">
+          <span className="text-slate-500">Buscar</span>
+          <input
+            className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-200 outline-none transition focus:border-cyan-500"
+            placeholder="Codigo, serial, IP, MAC..."
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+          />
+        </label>
+        <FilterSelect
+          label="Estado"
+          value={filters.status ?? ''}
+          onChange={(value) => updateFilters({ status: value || undefined })}
+          options={(catalogs?.statuses ?? []).map((status) => ({
+            label: equipmentStatusLabel(status),
+            value: status,
+          }))}
+        />
+        <FilterSelect
+          label="Tipo"
+          value={filters.type ?? ''}
+          onChange={(value) => updateFilters({ type: value || undefined })}
+          options={(catalogs?.types ?? []).map((type) => ({
+            label: type,
+            value: type,
+          }))}
+        />
+        <FilterSelect
+          label="Propiedad"
+          value={filters.ownershipType ?? ''}
+          onChange={(value) =>
+            updateFilters({ ownershipType: (value || undefined) as EquipmentFilters['ownershipType'] })
+          }
+          options={(catalogs?.ownershipTypes ?? []).map((ownershipType) => ({
+            label: ownershipTypeLabel(ownershipType),
+            value: ownershipType,
+          }))}
+        />
+        <FilterSelect
+          label="Por pagina"
+          value={String(filters.perPage ?? 10)}
+          onChange={(value) => updateFilters({ page: 1, perPage: Number(value) })}
+          options={[
+            { label: '10', value: '10' },
+            { label: '20', value: '20' },
+            { label: '50', value: '50' },
+          ]}
+          withEmptyOption={false}
+        />
+        <div className="flex flex-wrap items-end gap-2 lg:flex-nowrap">
+          <button
+            className="min-w-20 rounded-md border border-cyan-700 px-3 py-2 text-sm font-medium text-cyan-100 transition hover:border-cyan-400 hover:text-white"
+            type="submit"
+          >
+            Filtrar
+          </button>
+          <button
+            className="min-w-20 rounded-md border border-slate-700 px-3 py-2 text-sm font-medium text-slate-300 transition hover:border-slate-500 hover:text-white"
+            type="button"
+            onClick={clearFilters}
+          >
+            Limpiar
+          </button>
+        </div>
+      </form>
 
       {equipment.length === 0 ? (
         <div className="px-4 py-12 text-center text-sm text-slate-400">
-          Todavia no hay equipos registrados.
+          No hay equipos que coincidan con los filtros.
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[860px] text-left text-sm">
+          <table className="w-full min-w-[980px] table-fixed text-left text-sm">
+            <colgroup>
+              <col className="w-[8%]" />
+              <col className="w-[8%]" />
+              <col className="w-[12%]" />
+              <col className="w-[13%]" />
+              <col className="w-[13%]" />
+              <col className="w-[11%]" />
+              <col className="w-[16%]" />
+              <col className="w-[11%]" />
+              <col className="w-[8%]" />
+            </colgroup>
             <thead className="bg-slate-950 text-slate-400">
               <tr>
                 <th className="px-4 py-3 font-medium">Codigo</th>
                 <th className="px-4 py-3 font-medium">Serial</th>
                 <th className="px-4 py-3 font-medium">Equipo</th>
+                <th className="px-4 py-3 font-medium">Red</th>
+                <th className="px-4 py-3 font-medium">Hardware</th>
                 <th className="px-4 py-3 font-medium">Estado</th>
                 <th className="px-4 py-3 font-medium">Ubicacion</th>
                 <th className="px-4 py-3 font-medium">Responsable</th>
-                <th className="px-4 py-3 font-medium">Hoja de vida</th>
+                <th className="px-4 py-3 font-medium">Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -47,32 +201,64 @@ export function EquipmentTable({
                       : 'border-t border-slate-800'
                   }
                 >
-                  <td className="px-4 py-3 text-white">{item.internalCode}</td>
-                  <td className="px-4 py-3 text-slate-300">{item.serial}</td>
-                  <td className="px-4 py-3 text-slate-300">
+                  <td className="break-words px-4 py-3 text-white">{item.internalCode}</td>
+                  <td className="break-words px-4 py-3 text-slate-300">{item.serial}</td>
+                  <td className="break-words px-4 py-3 text-slate-300">
                     {[item.brand, item.model].filter(Boolean).join(' ') || item.type}
                   </td>
-                  <td className="px-4 py-3 text-slate-300">
+                  <td className="break-words px-4 py-3 text-slate-300">
+                    <div className="break-words">{item.ipAddresses || 'Sin IP'}</div>
+                    <div className="break-words text-xs text-slate-500">{item.macAddress || 'Sin MAC'}</div>
+                  </td>
+                  <td className="break-words px-4 py-3 text-slate-300">
+                    <div className="break-words">{item.processor || 'Sin procesador'}</div>
+                    <div className="break-words text-xs text-slate-500">
+                      {[item.storageType, formatStorage(item.storageCapacityGb)]
+                        .filter(Boolean)
+                        .join(' / ') || 'Sin almacenamiento'}
+                    </div>
+                  </td>
+                  <td className="break-words px-4 py-3 text-slate-300">
                     {equipmentStatusLabel(item.status)}
                   </td>
-                  <td className="px-4 py-3 text-slate-300">
+                  <td className="break-words px-4 py-3 text-slate-300">
                     {[item.headquarter?.name, item.location?.area, item.location?.office]
                       .filter(Boolean)
                       .join(' / ') || 'Sin ubicacion'}
                   </td>
-                  <td className="px-4 py-3 text-slate-300">
+                  <td className="break-words px-4 py-3 text-slate-300">
                     {[item.currentResponsible?.name, item.secondaryResponsible?.name]
                       .filter(Boolean)
                       .join(' / ') || 'Sin asignar'}
                   </td>
                   <td className="px-4 py-3">
-                    <button
-                      className="rounded-md border border-cyan-700 px-3 py-1.5 text-xs font-medium text-cyan-200 transition hover:border-cyan-400 hover:text-white"
-                      type="button"
-                      onClick={() => onSelectEquipment(item.id)}
-                    >
-                      Ver detalle
-                    </button>
+                    <div className="flex flex-col gap-2">
+                      <button
+                        className="w-full rounded-md border border-cyan-700 px-2 py-1.5 text-xs font-medium text-cyan-200 transition hover:border-cyan-400 hover:text-white"
+                        type="button"
+                        onClick={() => onSelectEquipment(item.id)}
+                      >
+                        Ver detalle
+                      </button>
+                      {canUpdate && (
+                        <button
+                          className="w-full rounded-md border border-slate-700 px-2 py-1.5 text-xs font-medium text-slate-300 transition hover:border-slate-500 hover:text-white"
+                          type="button"
+                          onClick={() => onEditEquipment(item)}
+                        >
+                          Editar
+                        </button>
+                      )}
+                      {canDelete && (
+                        <button
+                          className="w-full rounded-md border border-red-800 px-2 py-1.5 text-xs font-medium text-red-200 transition hover:border-red-500 hover:text-white"
+                          type="button"
+                          onClick={() => onDeleteEquipment(item.id)}
+                        >
+                          Retirar
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -80,6 +266,66 @@ export function EquipmentTable({
           </table>
         </div>
       )}
+
+      <div className="flex flex-col gap-3 border-t border-slate-800 px-4 py-3 text-sm text-slate-400 sm:flex-row sm:items-center sm:justify-between">
+        <span>
+          Pagina {currentPage} de {lastPage}
+        </span>
+        <div className="flex gap-2">
+          <button
+            className="rounded-md border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:border-slate-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+            disabled={currentPage <= 1}
+            type="button"
+            onClick={() => onChangeFilters({ ...filters, page: currentPage - 1 })}
+          >
+            Anterior
+          </button>
+          <button
+            className="rounded-md border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:border-slate-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+            disabled={currentPage >= lastPage}
+            type="button"
+            onClick={() => onChangeFilters({ ...filters, page: currentPage + 1 })}
+          >
+            Siguiente
+          </button>
+        </div>
+      </div>
     </div>
+  )
+}
+
+function formatStorage(value: number | null) {
+  return value === null || value === undefined ? null : `${value} GB`
+}
+
+function FilterSelect({
+  label,
+  onChange,
+  options,
+  value,
+  withEmptyOption = true,
+}: {
+  label: string
+  onChange: (value: string) => void
+  options: Array<{ label: string; value: string }>
+  value: string
+  withEmptyOption?: boolean
+}) {
+  return (
+    <label className="block text-sm">
+      <span className="text-slate-500">{label}</span>
+      <select
+        className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-200 outline-none transition focus:border-cyan-500"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+      >
+        {withEmptyOption && <option value="">Todos</option>}
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </label>
   )
 }
