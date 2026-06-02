@@ -253,6 +253,14 @@ export type Alert = {
   equipmentId: string | null
   assignedTo: string | null
   channels: string[]
+  metadata?: {
+    notes?: Array<{
+      createdAt: string
+      note: string
+      userId: string | null
+    }>
+    [key: string]: unknown
+  } | null
   triggeredAt: string
   dueAt: string | null
   acknowledgedAt: string | null

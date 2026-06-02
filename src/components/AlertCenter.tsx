@@ -40,7 +40,8 @@ export function AlertCenter({
   technicians,
   status,
 }: AlertCenterProps) {
-  const openAlerts = alerts.filter((alert) => alert.status !== 'resolved')
+  const visibleAlerts = alerts.filter((alert) => alert.status !== 'dismissed')
+  const openAlerts = visibleAlerts.filter((alert) => alert.status !== 'resolved')
   const criticalAlerts = alerts.filter((alert) => alert.severity === 'critical')
 
   return (
@@ -72,14 +73,14 @@ export function AlertCenter({
         <div className="px-4 py-12 text-center text-sm text-red-200">
           No fue posible cargar las alertas.
         </div>
-      ) : alerts.length === 0 ? (
+      ) : visibleAlerts.length === 0 ? (
         <div className="px-4 py-12 text-center text-sm text-slate-400">
           No hay alertas registradas.
         </div>
       ) : (
         <div className="divide-y divide-slate-800">
-          {alerts.map((alert) => (
-            <article key={alert.id} className="grid gap-4 px-4 py-4 lg:grid-cols-[1fr_260px]">
+            {visibleAlerts.map((alert) => (
+              <article key={alert.id} className="grid gap-4 px-4 py-4 lg:grid-cols-[1fr_260px]">
               <div>
                 <div className="flex flex-wrap items-center gap-2">
                   <SeverityBadge severity={alert.severity} label={alert.severityLabel} />
@@ -99,7 +100,7 @@ export function AlertCenter({
               <div className="flex flex-wrap items-start gap-2 lg:justify-end">
                 {isFailureAlert(alert) && alert.status !== 'resolved' && alert.assignedTo !== currentUserId && (
                   <ActionButton
-                    label={alert.assignedTo ? 'Tomar para mi' : 'Tomar'}
+                    label="Tomar falla"
                     onClick={() => onSelfAssign(alert.id)}
                   />
                 )}
@@ -127,9 +128,9 @@ export function AlertCenter({
                   </>
                 )}
               </div>
-            </article>
-          ))}
-        </div>
+              </article>
+            ))}
+          </div>
       )}
     </section>
   )

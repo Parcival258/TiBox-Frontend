@@ -12,10 +12,13 @@ import { LoginLoader } from './components/Loaders'
 import { MaintenanceScheduleBoard } from './components/MaintenanceScheduleBoard'
 import { MaintenanceScheduleFormModal } from './components/MaintenanceScheduleFormModal'
 import { MetricGrid } from './components/MetricGrid'
+import { MyCasesPanel } from './components/MyCasesPanel'
+import { SuccessNotice } from './components/SuccessNotice'
 import { emptyDashboard } from './constants/dashboard'
 import { getCurrentUser, login, logout } from './services/auth'
 import {
   acknowledgeAlert,
+  addAlertNote,
   assignAlert,
   assignEquipment,
   cancelMaintenanceSchedule,
@@ -25,6 +28,7 @@ import {
   createMaintenanceSchedule,
   deleteEquipmentAttachment,
   deleteEquipment,
+  dismissAlert,
   finishMaintenanceSchedule,
   getAlerts,
   getDashboard,
@@ -37,6 +41,7 @@ import {
   markMaintenancePending,
   rescheduleMaintenanceSchedule,
   resolveAlert,
+  resolveFailureReport,
   returnEquipment,
   runAlertChecks,
   selfAssignAlert,
@@ -65,7 +70,7 @@ type LoadState = 'loading' | 'ready' | 'error'
 type AuthState = 'checking' | 'authenticated' | 'guest' | 'submitting'
 type LifeSheetState = 'idle' | 'loading' | 'ready' | 'error'
 type ModuleState = 'loading' | 'ready' | 'error'
-type ActiveView = 'inventory' | 'maintenance' | 'alerts'
+type ActiveView = 'inventory' | 'maintenance' | 'cases' | 'alerts'
 type ThemeMode = 'dark' | 'light'
 
 const defaultEquipmentFilters: EquipmentFilters = {
@@ -99,6 +104,9 @@ function App() {
   const [alerts, setAlerts] = useState<Alert[]>([])
   const [alertsStatus, setAlertsStatus] = useState<ModuleState>('loading')
   const [isRunningAlerts, setIsRunningAlerts] = useState(false)
+  const [successNotice, setSuccessNotice] = useState<{ message: string; subText?: string } | null>(
+    null
+  )
   const [equipmentFormMode, setEquipmentFormMode] = useState<'create' | 'edit'>('create')
   const [editingEquipment, setEditingEquipment] = useState<Equipment | null>(null)
   const [isEquipmentFormOpen, setIsEquipmentFormOpen] = useState(false)
@@ -121,6 +129,21 @@ function App() {
   const canReturnEquipment = can(user, 'equipment.return')
   const canManageEquipmentAttachments = can(user, 'equipment.attachments.manage')
   const canCreateFailureReports = can(user, 'failure_reports.create')
+  const canManageFailureReports = can(user, 'failure_reports.manage')
+  const visibleAlerts = alerts.filter((alert) => alert.status !== 'dismissed')
+  const unresolvedAlerts = visibleAlerts.filter((alert) => alert.status !== 'resolved')
+  const alertAttentionCount = unresolvedAlerts.filter((alert) => {
+    if (canManageAlerts) {
+      return true
+    }
+
+    return !alert.assignedTo
+  }).length
+  const unassignedFailureCount = unresolvedAlerts.filter(
+    (alert) => alert.type === 'damaged_equipment_reported' && !alert.assignedTo
+  ).length
+  const myAlertCount = unresolvedAlerts.filter((alert) => alert.assignedTo === user?.id).length
+  const myCaseCount = visibleAlerts.filter((alert) => alert.assignedTo === user?.id).length
 
   useEffect(() => {
     getCurrentUser()
@@ -382,9 +405,20 @@ function App() {
       .finally(() => setIsRunningAlerts(false))
   }
 
-  function handleAlertAction(action: () => Promise<Alert>) {
+  function showSuccess(message: string, subText?: string) {
+    setSuccessNotice({ message, subText })
+    window.setTimeout(() => setSuccessNotice(null), 2400)
+  }
+
+  function handleAlertAction(action: () => Promise<unknown>, message?: string) {
     action()
-      .then(() => refreshAlerts())
+      .then(() => {
+        if (message) {
+          showSuccess(message, 'La informacion se actualizo correctamente.')
+        }
+
+        return refreshAlerts()
+      })
       .catch(() => setAlertsStatus('error'))
   }
 
@@ -464,6 +498,24 @@ function App() {
           onToggleTheme={() => setTheme((current) => (current === 'dark' ? 'light' : 'dark'))}
         />
         <MetricGrid dashboard={dashboard} />
+        {canViewAlerts && alertAttentionCount > 0 && (
+          <AlertNotice
+            activeView={activeView}
+            count={alertAttentionCount}
+            myCount={myAlertCount}
+            unassignedFailureCount={unassignedFailureCount}
+            onOpen={() => setActiveView('alerts')}
+          />
+        )}
+        {successNotice && (
+          <div className="mb-5 flex justify-end">
+            <SuccessNotice
+              message={successNotice.message}
+              subText={successNotice.subText}
+              onClose={() => setSuccessNotice(null)}
+            />
+          </div>
+        )}
         <nav className="mb-6 flex flex-wrap gap-2">
           <TabButton
             active={activeView === 'inventory'}
@@ -479,7 +531,16 @@ function App() {
           )}
           {canViewAlerts && (
             <TabButton
+              active={activeView === 'cases'}
+              badge={myCaseCount}
+              label="Mis casos"
+              onClick={() => setActiveView('cases')}
+            />
+          )}
+          {canViewAlerts && (
+            <TabButton
               active={activeView === 'alerts'}
+              badge={alertAttentionCount}
               label="Alertas"
               onClick={() => setActiveView('alerts')}
             />
@@ -505,6 +566,7 @@ function App() {
             />
             <div className="space-y-6">
               <EquipmentLifeSheet
+                canResolveFailures={canManageFailureReports}
                 lifeSheet={lifeSheet}
                 status={lifeSheetStatus}
                 onDeleteAttachment={
@@ -514,6 +576,15 @@ function App() {
                         await deleteEquipmentAttachment(lifeSheet.equipment.id, attachmentId)
                         await refreshSelectedLifeSheet(lifeSheet.equipment.id)
                         await refreshCoreData()
+                      }
+                    : undefined
+                }
+                onResolveFailure={
+                  canManageFailureReports
+                    ? async (failureReportId) => {
+                        await resolveFailureReport(failureReportId)
+                        showSuccess('Falla resuelta', 'La falla y su alerta asociada quedaron cerradas.')
+                        await refreshOperationalData()
                       }
                     : undefined
                 }
@@ -600,10 +671,39 @@ function App() {
             technicians={equipmentCatalogs?.technicians ?? []}
             status={alertsStatus}
             onRunChecks={handleRunAlertChecks}
-            onAcknowledge={(alertId) => handleAlertAction(() => acknowledgeAlert(alertId))}
-            onAssign={(alertId, assignedTo) => handleAlertAction(() => assignAlert(alertId, assignedTo))}
-            onResolve={(alertId) => handleAlertAction(() => resolveAlert(alertId))}
-            onSelfAssign={(alertId) => handleAlertAction(() => selfAssignAlert(alertId))}
+            onAcknowledge={(alertId) =>
+              handleAlertAction(() => acknowledgeAlert(alertId), 'Alerta reconocida')
+            }
+            onAssign={(alertId, assignedTo) =>
+              handleAlertAction(() => assignAlert(alertId, assignedTo), 'Alerta asignada')
+            }
+            onResolve={(alertId) =>
+              handleAlertAction(() => resolveAlert(alertId), 'Alerta resuelta')
+            }
+            onSelfAssign={(alertId) =>
+              handleAlertAction(() => selfAssignAlert(alertId), 'Falla tomada')
+            }
+          />
+        )}
+        {activeView === 'cases' && canViewAlerts && (
+          <MyCasesPanel
+            alerts={alerts}
+            currentUserId={user?.id ?? null}
+            status={alertsStatus}
+            onAddNote={(alertId, note) =>
+              handleAlertAction(() => addAlertNote(alertId, note), 'Nota guardada')
+            }
+            onDismiss={(alertId) =>
+              handleAlertAction(() => dismissAlert(alertId), 'Caso quitado')
+            }
+            onResolveCase={(alert) => {
+              const action =
+                alert.entityType === 'failure_report'
+                  ? () => resolveFailureReport(alert.entityId)
+                  : () => resolveAlert(alert.id)
+
+              handleAlertAction(action, 'Caso cerrado')
+            }}
           />
         )}
         <EquipmentFormModal
@@ -629,10 +729,12 @@ function App() {
 
 function TabButton({
   active,
+  badge,
   label,
   onClick,
 }: {
   active: boolean
+  badge?: number
   label: string
   onClick: () => void
 }) {
@@ -646,8 +748,52 @@ function TabButton({
       type="button"
       onClick={onClick}
     >
-      {label}
+      <span>{label}</span>
+      {badge ? (
+        <span className="ml-2 rounded-full border border-amber-500/60 bg-amber-500 px-2 py-0.5 text-xs font-semibold text-slate-950">
+          {badge}
+        </span>
+      ) : null}
     </button>
+  )
+}
+
+function AlertNotice({
+  activeView,
+  count,
+  myCount,
+  onOpen,
+  unassignedFailureCount,
+}: {
+  activeView: ActiveView
+  count: number
+  myCount: number
+  onOpen: () => void
+  unassignedFailureCount: number
+}) {
+  const detail =
+    unassignedFailureCount > 0
+      ? `${unassignedFailureCount} falla${unassignedFailureCount === 1 ? '' : 's'} sin asignar`
+      : myCount > 0
+        ? `${myCount} alerta${myCount === 1 ? '' : 's'} asignada${myCount === 1 ? '' : 's'} a ti`
+        : `${count} alerta${count === 1 ? '' : 's'} pendiente${count === 1 ? '' : 's'}`
+
+  return (
+    <section className="mb-5 mt-4 flex flex-col gap-3 rounded-lg border border-amber-700 bg-amber-950/35 px-4 py-3 text-sm text-amber-100 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <p className="font-semibold">Alertas pendientes</p>
+        <p className="mt-1 text-amber-100/80">{detail}</p>
+      </div>
+      {activeView !== 'alerts' && (
+        <button
+          className="rounded-md border border-amber-500 px-3 py-2 text-sm font-medium text-amber-100 transition hover:border-amber-300 hover:text-white"
+          type="button"
+          onClick={onOpen}
+        >
+          Revisar alertas
+        </button>
+      )}
+    </section>
   )
 }
 

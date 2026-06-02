@@ -1,5 +1,6 @@
 import { useId, useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import type { EquipmentCatalogs, EquipmentLifeSheet } from '../types/inventory'
+import { SuccessNotice } from './SuccessNotice'
 
 type EquipmentOperationsPanelProps = {
   canAssign: boolean
@@ -178,9 +179,11 @@ export function EquipmentOperationsPanel({
         </p>
       )}
       {submitState === 'success' && (
-        <p className="rounded-md border border-emerald-900 bg-emerald-950/30 px-3 py-2 text-sm text-emerald-200">
-          Operacion completada.
-        </p>
+        <SuccessNotice
+          message="Operacion completada"
+          subText="Los cambios se guardaron correctamente."
+          onClose={() => setSubmitState('idle')}
+        />
       )}
 
       {!hasOperations && (

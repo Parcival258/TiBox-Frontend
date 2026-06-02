@@ -1,5 +1,6 @@
 import { type FormEvent, useState } from 'react'
 import { LoginLoader } from './Loaders'
+import { StarryBackdrop } from './StarryBackdrop'
 
 type LoginPanelProps = {
   isSubmitting: boolean
@@ -17,14 +18,15 @@ export function LoginPanel({ isSubmitting, error, onSubmit }: LoginPanelProps) {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-950 px-5 text-slate-100">
+    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-950 px-5 text-slate-100">
+      <StarryBackdrop />
       {isSubmitting && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/90 px-5">
           <LoginLoader label="Ingresando..." />
         </div>
       )}
       <form
-        className="w-full max-w-sm rounded-lg border border-slate-800 bg-slate-900 p-6"
+        className="relative z-10 w-full max-w-sm rounded-lg border border-slate-800 bg-slate-900/90 p-6 shadow-2xl shadow-slate-950/40 backdrop-blur"
         onSubmit={handleSubmit}
       >
         <p className="text-sm font-medium uppercase tracking-wide text-cyan-300">

@@ -4,6 +4,7 @@ import { equipmentAttachmentDownloadUrl } from '../services/inventory'
 import type {
   EquipmentAttachment,
   EquipmentLifeSheet,
+  FailureReport,
   TechnicalHistoryItem,
 } from '../types/inventory'
 import {
@@ -16,8 +17,10 @@ import {
 } from '../utils/enumLabels'
 
 type EquipmentLifeSheetProps = {
+  canResolveFailures?: boolean
   lifeSheet: EquipmentLifeSheet | null
   onDeleteAttachment?: (attachmentId: string) => Promise<void>
+  onResolveFailure?: (failureReportId: string) => Promise<void>
   status: 'idle' | 'loading' | 'ready' | 'error'
 }
 
@@ -54,8 +57,10 @@ function formatBytes(value: number | null | undefined) {
 }
 
 export function EquipmentLifeSheet({
+  canResolveFailures,
   lifeSheet,
   onDeleteAttachment,
+  onResolveFailure,
   status,
 }: EquipmentLifeSheetProps) {
   if (status === 'idle') {
@@ -84,6 +89,9 @@ export function EquipmentLifeSheet({
 
   const { equipment, summary } = lifeSheet
   const title = [equipment.brand, equipment.model].filter(Boolean).join(' ') || equipment.type
+  const openFailureReports = lifeSheet.failureReports.filter((report) =>
+    ['open', 'in_review'].includes(report.status)
+  )
 
   return (
     <aside className="space-y-4 rounded-lg border border-slate-800 bg-slate-900 p-5">
@@ -107,6 +115,12 @@ export function EquipmentLifeSheet({
         <Metric label="Asignaciones" value={summary.totalAssignments} />
         <Metric label="Adjuntos" value={summary.totalAttachments} />
       </div>
+
+      <OpenFailures
+        canResolve={Boolean(canResolveFailures && onResolveFailure)}
+        failures={openFailureReports}
+        onResolveFailure={onResolveFailure}
+      />
 
       <Section title="Identificacion">
         <Info label="Serial" value={equipment.serial} />
@@ -202,6 +216,58 @@ export function EquipmentLifeSheet({
         }))}
       />
     </aside>
+  )
+}
+
+function OpenFailures({
+  canResolve,
+  failures,
+  onResolveFailure,
+}: {
+  canResolve: boolean
+  failures: FailureReport[]
+  onResolveFailure?: (failureReportId: string) => Promise<void>
+}) {
+  if (failures.length === 0) {
+    return (
+      <section className="rounded-md border border-slate-800 bg-slate-950 px-3 py-3">
+        <h3 className="text-sm font-semibold text-white">Fallas abiertas</h3>
+        <p className="mt-2 text-sm text-slate-500">No hay fallas pendientes en este equipo.</p>
+      </section>
+    )
+  }
+
+  return (
+    <section className="rounded-md border border-amber-800 bg-amber-950/30 px-3 py-3">
+      <h3 className="text-sm font-semibold text-amber-100">Fallas abiertas</h3>
+      <div className="mt-3 space-y-3">
+        {failures.map((failure) => (
+          <article key={failure.id} className="rounded-md border border-amber-900/70 bg-slate-950 p-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="text-sm font-semibold text-white">{failure.title}</p>
+                <p className="mt-1 text-xs text-amber-200">
+                  {failureStatusLabel(failure.status)} / Prioridad {priorityLabel(failure.priority)}
+                </p>
+                <p className="mt-2 text-sm text-slate-400">{failure.description}</p>
+                <p className="mt-2 text-xs text-slate-500">
+                  Reportada el {formatDate(failure.createdAt)}
+                </p>
+              </div>
+              {canResolve && (
+                <button
+                  className="shrink-0 rounded-md border border-emerald-800 px-3 py-2 text-xs font-medium text-emerald-200 transition hover:border-emerald-500 hover:text-white"
+                  type="button"
+                  onClick={() => onResolveFailure?.(failure.id)}
+                >
+                  Resolver falla
+                </button>
+              )}
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
   )
 }
 

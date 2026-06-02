@@ -1,4 +1,5 @@
 import heroImage from '../assets/hero.png'
+import { StarryBackdrop } from './StarryBackdrop'
 
 type LandingPageProps = {
   onEnter: () => void
@@ -7,6 +8,7 @@ type LandingPageProps = {
 export function LandingPage({ onEnter }: LandingPageProps) {
   return (
     <main className="relative min-h-screen overflow-hidden bg-slate-950 text-white">
+      <StarryBackdrop />
       <img
         className="absolute inset-0 h-full w-full object-cover opacity-35"
         src={heroImage}
@@ -14,7 +16,7 @@ export function LandingPage({ onEnter }: LandingPageProps) {
       />
       <div className="absolute inset-0 bg-slate-950/70" />
 
-      <section className="relative mx-auto flex min-h-screen w-full max-w-6xl flex-col justify-center px-5 py-16 sm:px-8">
+      <section className="relative z-10 mx-auto flex min-h-screen w-full max-w-6xl flex-col justify-center px-5 py-16 sm:px-8">
         <p className="text-sm font-medium uppercase tracking-wide text-cyan-300">
           Inventario TI
         </p>
