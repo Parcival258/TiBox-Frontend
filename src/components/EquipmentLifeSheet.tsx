@@ -93,6 +93,14 @@ export function EquipmentLifeSheet({
         <p className="text-sm text-slate-400">{title}</p>
       </div>
 
+      {summary.openFailureReports > 0 && (
+        <div className="rounded-md border border-amber-800 bg-amber-950/40 px-3 py-2 text-sm text-amber-100">
+          Este equipo tiene {summary.openFailureReports} falla
+          {summary.openFailureReports === 1 ? '' : 's'} abierta
+          {summary.openFailureReports === 1 ? '' : 's'}.
+        </div>
+      )}
+
       <div className="grid grid-cols-2 gap-3 text-sm">
         <Metric label="Mantenimientos" value={summary.totalMaintenanceRecords} />
         <Metric label="Fallas abiertas" value={summary.openFailureReports} />

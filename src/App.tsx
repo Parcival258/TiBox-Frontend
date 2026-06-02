@@ -16,6 +16,7 @@ import { emptyDashboard } from './constants/dashboard'
 import { getCurrentUser, login, logout } from './services/auth'
 import {
   acknowledgeAlert,
+  assignAlert,
   assignEquipment,
   cancelMaintenanceSchedule,
   createEquipment,
@@ -38,6 +39,7 @@ import {
   resolveAlert,
   returnEquipment,
   runAlertChecks,
+  selfAssignAlert,
   startMaintenanceSchedule,
   updateEquipment,
   uploadEquipmentAttachment,
@@ -183,6 +185,14 @@ function App() {
   }, [authStatus, selectedEquipmentId])
 
   function handleSelectEquipment(equipmentId: string) {
+    if (equipmentId === selectedEquipmentId) {
+      if (lifeSheetStatus === 'error') {
+        refreshSelectedLifeSheet(equipmentId)
+      }
+
+      return
+    }
+
     setSelectedEquipmentId(equipmentId)
     setLifeSheet(null)
     setLifeSheetStatus('loading')
@@ -585,11 +595,15 @@ function App() {
           <AlertCenter
             alerts={alerts}
             canManage={canManageAlerts}
+            currentUserId={user?.id ?? null}
             isRunning={isRunningAlerts}
+            technicians={equipmentCatalogs?.technicians ?? []}
             status={alertsStatus}
             onRunChecks={handleRunAlertChecks}
             onAcknowledge={(alertId) => handleAlertAction(() => acknowledgeAlert(alertId))}
+            onAssign={(alertId, assignedTo) => handleAlertAction(() => assignAlert(alertId, assignedTo))}
             onResolve={(alertId) => handleAlertAction(() => resolveAlert(alertId))}
+            onSelfAssign={(alertId) => handleAlertAction(() => selfAssignAlert(alertId))}
           />
         )}
         <EquipmentFormModal

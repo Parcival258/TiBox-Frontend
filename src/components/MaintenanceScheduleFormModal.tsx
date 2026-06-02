@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useId, useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import type {
   CreateMaintenanceSchedulePayload,
   Equipment,
@@ -24,6 +24,16 @@ type FormState = {
   priority: string
   scheduledFor: string
   status: string
+}
+
+type SelectOption = {
+  label: string
+  searchText?: string
+  value: string
+}
+
+function responsibleSearchText(responsible: { email?: string; jobTitle?: string | null; name: string }) {
+  return [responsible.name, responsible.email, responsible.jobTitle].filter(Boolean).join(' ')
 }
 
 const emptyForm: FormState = {
@@ -90,6 +100,20 @@ export function MaintenanceScheduleFormModal({
         .filter((item) => item.status !== 'retired')
         .map((item) => ({
           label: equipmentLabel(item),
+          searchText: [
+            item.internalCode,
+            item.assetTag,
+            item.serial,
+            item.type,
+            item.brand,
+            item.model,
+            item.currentResponsible?.name,
+            item.headquarter?.name,
+            item.location?.area,
+            item.location?.office,
+          ]
+            .filter(Boolean)
+            .join(' '),
           value: item.id,
         })),
     [equipment]
@@ -151,8 +175,9 @@ export function MaintenanceScheduleFormModal({
 
         <div className="grid gap-5 p-5 md:grid-cols-2">
           <FieldGroup title="Programacion">
-            <Select
+            <SearchableSelect
               label="Equipo"
+              placeholder="Buscar equipo"
               required
               value={form.equipmentId}
               onChange={(value) => setField('equipmentId', value)}
@@ -186,12 +211,14 @@ export function MaintenanceScheduleFormModal({
               onChange={(value) => setField('priority', value)}
               options={catalogs?.priorities ?? fallbackPriorities}
             />
-            <Select
+            <SearchableSelect
               label="Tecnico"
+              placeholder="Buscar tecnico"
               value={form.assignedTechnicianId}
               onChange={(value) => setField('assignedTechnicianId', value)}
               options={(equipmentCatalogs?.responsibles ?? []).map((responsible) => ({
                 label: responsible.name,
+                searchText: responsibleSearchText(responsible),
                 value: responsible.id,
               }))}
             />
@@ -286,7 +313,7 @@ function Select({
 }: {
   label: string
   onChange: (value: string) => void
-  options: Array<{ label: string; value: string }>
+  options: SelectOption[]
   required?: boolean
   value: string
 }) {
@@ -307,6 +334,100 @@ function Select({
         ))}
       </select>
     </label>
+  )
+}
+
+function SearchableSelect({
+  label,
+  onChange,
+  options,
+  placeholder,
+  required,
+  value,
+}: {
+  label: string
+  onChange: (value: string) => void
+  options: SelectOption[]
+  placeholder?: string
+  required?: boolean
+  value: string
+}) {
+  const inputId = useId()
+  const selectedOption = options.find((option) => option.value === value)
+  const [query, setQuery] = useState(selectedOption?.label ?? '')
+  const [isOpen, setIsOpen] = useState(false)
+
+  const filteredOptions = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase()
+
+    if (!normalizedQuery || selectedOption?.label === query) {
+      return options.slice(0, 20)
+    }
+
+    return options
+      .filter((option) => `${option.label} ${option.searchText ?? ''}`.toLowerCase().includes(normalizedQuery))
+      .slice(0, 20)
+  }, [options, query, selectedOption?.label])
+
+  function selectOption(option: SelectOption) {
+    onChange(option.value)
+    setQuery(option.label)
+    setIsOpen(false)
+  }
+
+  function handleQueryChange(nextQuery: string) {
+    setQuery(nextQuery)
+    setIsOpen(true)
+
+    if (value) {
+      onChange('')
+    }
+  }
+
+  return (
+    <div
+      className="relative text-sm"
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) {
+          setIsOpen(false)
+          setQuery(selectedOption?.label ?? '')
+        }
+      }}
+    >
+      <label className="text-slate-500" htmlFor={inputId}>
+        {label}
+      </label>
+      <input
+        autoComplete="off"
+        className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-200 outline-none transition placeholder:text-slate-600 focus:border-cyan-500"
+        id={inputId}
+        placeholder={placeholder}
+        required={required}
+        type="text"
+        value={query}
+        onChange={(event) => handleQueryChange(event.target.value)}
+        onFocus={() => setIsOpen(true)}
+      />
+      {isOpen && (
+        <div className="absolute z-20 mt-1 max-h-56 w-full overflow-y-auto rounded-md border border-slate-700 bg-slate-950 shadow-xl">
+          {filteredOptions.length > 0 ? (
+            filteredOptions.map((option) => (
+              <button
+                className="block w-full px-3 py-2 text-left text-sm text-slate-200 transition hover:bg-slate-800 focus:bg-slate-800 focus:outline-none"
+                key={option.value}
+                type="button"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => selectOption(option)}
+              >
+                {option.label}
+              </button>
+            ))
+          ) : (
+            <p className="px-3 py-2 text-sm text-slate-500">Sin resultados</p>
+          )}
+        </div>
+      )}
+    </div>
   )
 }
 

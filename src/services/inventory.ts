@@ -160,6 +160,14 @@ export function acknowledgeAlert(alertId: string) {
   return patchJson<Alert>(`/api/v1/alerts/${alertId}/acknowledge`)
 }
 
+export function assignAlert(alertId: string, assignedTo: string) {
+  return patchJson<Alert>(`/api/v1/alerts/${alertId}/assign`, { assignedTo })
+}
+
+export function selfAssignAlert(alertId: string) {
+  return patchJson<Alert>(`/api/v1/alerts/${alertId}/self-assign`)
+}
+
 export function resolveAlert(alertId: string) {
   return patchJson<Alert>(`/api/v1/alerts/${alertId}/resolve`)
 }

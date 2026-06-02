@@ -1,14 +1,18 @@
-import type { Alert } from '../types/inventory'
+import type { Alert, Responsible } from '../types/inventory'
 import { AppLoader } from './Loaders'
 
 type AlertCenterProps = {
   alerts: Alert[]
   canManage: boolean
+  currentUserId: string | null
   isRunning: boolean
+  technicians: Responsible[]
   status: 'loading' | 'ready' | 'error'
   onAcknowledge: (alertId: string) => void
+  onAssign: (alertId: string, assignedTo: string) => void
   onResolve: (alertId: string) => void
   onRunChecks: () => void
+  onSelfAssign: (alertId: string) => void
 }
 
 function formatDate(value: string | null | undefined) {
@@ -26,10 +30,14 @@ function formatDate(value: string | null | undefined) {
 export function AlertCenter({
   alerts,
   canManage,
+  currentUserId,
   isRunning,
   onAcknowledge,
+  onAssign,
   onResolve,
   onRunChecks,
+  onSelfAssign,
+  technicians,
   status,
 }: AlertCenterProps) {
   const openAlerts = alerts.filter((alert) => alert.status !== 'resolved')
@@ -71,7 +79,7 @@ export function AlertCenter({
       ) : (
         <div className="divide-y divide-slate-800">
           {alerts.map((alert) => (
-            <article key={alert.id} className="grid gap-4 px-4 py-4 lg:grid-cols-[1fr_220px]">
+            <article key={alert.id} className="grid gap-4 px-4 py-4 lg:grid-cols-[1fr_260px]">
               <div>
                 <div className="flex flex-wrap items-center gap-2">
                   <SeverityBadge severity={alert.severity} label={alert.severityLabel} />
@@ -83,31 +91,52 @@ export function AlertCenter({
                 <h3 className="mt-3 text-base font-semibold text-white">{alert.title}</h3>
                 <p className="mt-1 text-sm text-slate-400">{alert.message}</p>
                 <p className="mt-2 text-xs text-slate-500">
-                  {[alert.equipment?.internalCode, alert.assignee?.name].filter(Boolean).join(' / ') ||
-                    'Sin responsable'}
+                  {[alert.equipment?.internalCode, alert.assignee?.name ?? 'Sin asignar']
+                    .filter(Boolean)
+                    .join(' / ')}
                 </p>
               </div>
-              {canManage && (
-                <div className="flex flex-wrap items-start gap-2 lg:justify-end">
+              <div className="flex flex-wrap items-start gap-2 lg:justify-end">
+                {isFailureAlert(alert) && alert.status !== 'resolved' && alert.assignedTo !== currentUserId && (
                   <ActionButton
-                    label="Reconocer"
-                    disabled={alert.status !== 'open'}
-                    onClick={() => onAcknowledge(alert.id)}
+                    label={alert.assignedTo ? 'Tomar para mi' : 'Tomar'}
+                    onClick={() => onSelfAssign(alert.id)}
                   />
+                )}
+                {canManage && isFailureAlert(alert) && alert.status !== 'resolved' && (
+                  <AssignSelect
+                    alertId={alert.id}
+                    currentValue={alert.assignedTo ?? ''}
+                    technicians={technicians}
+                    onAssign={onAssign}
+                  />
+                )}
+                {canManage && (
+                  <>
+                    <ActionButton
+                      label="Reconocer"
+                      disabled={alert.status !== 'open'}
+                      onClick={() => onAcknowledge(alert.id)}
+                    />
                   <ActionButton
                     label="Resolver"
                     tone="success"
                     disabled={alert.status === 'resolved'}
                     onClick={() => onResolve(alert.id)}
                   />
-                </div>
-              )}
+                  </>
+                )}
+              </div>
             </article>
           ))}
         </div>
       )}
     </section>
   )
+}
+
+function isFailureAlert(alert: Alert) {
+  return alert.type === 'damaged_equipment_reported'
 }
 
 function SeverityBadge({ label, severity }: { label: string; severity: string }) {
@@ -119,6 +148,40 @@ function SeverityBadge({ label, severity }: { label: string; severity: string })
         : 'border-cyan-800 bg-cyan-950/40 text-cyan-200'
 
   return <span className={`rounded-md border px-2 py-1 text-xs font-medium ${tone}`}>{label}</span>
+}
+
+function AssignSelect({
+  alertId,
+  currentValue,
+  onAssign,
+  technicians,
+}: {
+  alertId: string
+  currentValue: string
+  onAssign: (alertId: string, assignedTo: string) => void
+  technicians: Responsible[]
+}) {
+  return (
+    <label className="min-w-40 text-xs text-slate-500">
+      Asignar
+      <select
+        className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-2 py-1.5 text-xs text-slate-200 outline-none transition focus:border-cyan-500"
+        value={currentValue}
+        onChange={(event) => {
+          if (event.target.value) {
+            onAssign(alertId, event.target.value)
+          }
+        }}
+      >
+        <option value="">Sin asignar</option>
+        {technicians.map((technician) => (
+          <option key={technician.id} value={technician.id}>
+            {technician.name}
+          </option>
+        ))}
+      </select>
+    </label>
+  )
 }
 
 function ActionButton({

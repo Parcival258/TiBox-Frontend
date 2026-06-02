@@ -81,6 +81,7 @@ export type EquipmentCatalogs = {
     office: string | null
   }>
   responsibles: Responsible[]
+  technicians: Responsible[]
 }
 
 export type EquipmentPayload = {
