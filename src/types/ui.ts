@@ -1,0 +1,6 @@
+export type ActiveView = 'inventory' | 'maintenance' | 'cases' | 'alerts'
+export type AuthState = 'checking' | 'authenticated' | 'guest' | 'submitting'
+export type LifeSheetState = 'idle' | 'loading' | 'ready' | 'error'
+export type LoadState = 'loading' | 'ready' | 'error'
+export type ModuleState = 'loading' | 'ready' | 'error'
+export type ThemeMode = 'dark' | 'light'
