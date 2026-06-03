@@ -210,7 +210,7 @@ export function EquipmentFormModal({
           <FieldGroup title="Identificacion">
             <Input label="Codigo" required value={form.internalCode} onChange={(value) => setField('internalCode', value)} />
             <Input label="Serial" required value={form.serial} onChange={(value) => setField('serial', value)} />
-            <Input label="Activo" value={form.assetTag} onChange={(value) => setField('assetTag', value)} />
+            <Input label="Placa de inventario" value={form.assetTag} onChange={(value) => setField('assetTag', value)} />
             <Input label="Tipo" required value={form.type} onChange={(value) => setField('type', value)} />
             <Input label="Marca" value={form.brand} onChange={(value) => setField('brand', value)} />
             <Input label="Modelo" value={form.model} onChange={(value) => setField('model', value)} />

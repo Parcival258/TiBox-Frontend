@@ -124,7 +124,7 @@ export function EquipmentLifeSheet({
 
       <Section title="Identificacion">
         <Info label="Serial" value={equipment.serial} />
-        <Info label="Activo" value={valueOrEmpty(equipment.assetTag)} />
+        <Info label="Placa de inventario" value={valueOrEmpty(equipment.assetTag)} />
         <Info label="Estado" value={equipmentStatusLabel(equipment.status)} />
         <Info label="Propiedad" value={ownershipTypeLabel(equipment.ownershipType)} />
       </Section>
