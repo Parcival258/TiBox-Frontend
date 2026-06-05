@@ -9,8 +9,12 @@ import {
   cancelMaintenanceSchedule,
   createEquipment,
   createFailureReport,
+  createHeadquarter,
+  createLocation,
   createMaintenanceRecord,
   createMaintenanceSchedule,
+  deactivateHeadquarter,
+  deactivateLocation,
   deleteEquipment,
   deleteEquipmentAttachment,
   dismissAlert,
@@ -21,6 +25,7 @@ import {
   getEquipmentCatalogs,
   getEquipmentLifeSheet,
   getHeadquarters,
+  getLocations,
   getMaintenanceScheduleCatalogs,
   getMaintenanceSchedules,
   markMaintenancePending,
@@ -31,6 +36,8 @@ import {
   runAlertChecks,
   selfAssignAlert,
   startMaintenanceSchedule,
+  updateHeadquarter,
+  updateLocation,
   updateEquipment,
   uploadEquipmentAttachment,
 } from '../services/inventory'
@@ -43,7 +50,11 @@ import type {
   EquipmentFilters,
   EquipmentLifeSheet as EquipmentLifeSheetType,
   EquipmentPayload,
+  FinishMaintenanceSchedulePayload,
   Headquarter,
+  HeadquarterPayload,
+  Location,
+  LocationPayload,
   MaintenanceSchedule,
   MaintenanceScheduleCatalogs,
   PaginationMeta,
@@ -51,6 +62,11 @@ import type {
 } from '../types/inventory'
 import type { ActiveView, AuthState, LifeSheetState, LoadState, ModuleState } from '../types/ui'
 import { alertMetrics } from '../utils/alertMetrics'
+import {
+  downloadEquipmentImportTemplate,
+  readEquipmentImportFile,
+  type EquipmentImportResult,
+} from '../utils/equipmentBulkImport'
 import { can } from '../utils/permissions'
 
 type UseInventoryWorkspaceOptions = {
@@ -76,6 +92,7 @@ export function useInventoryWorkspace({
   const [lifeSheet, setLifeSheet] = useState<EquipmentLifeSheetType | null>(null)
   const [lifeSheetStatus, setLifeSheetStatus] = useState<LifeSheetState>('idle')
   const [headquarters, setHeadquarters] = useState<Headquarter[]>([])
+  const [locations, setLocations] = useState<Location[]>([])
   const [maintenanceSchedules, setMaintenanceSchedules] = useState<MaintenanceSchedule[]>([])
   const [maintenanceCatalogs, setMaintenanceCatalogs] =
     useState<MaintenanceScheduleCatalogs | null>(null)
@@ -103,6 +120,9 @@ export function useInventoryWorkspace({
     canUpdateMaintenance: can(user, 'maintenance.update'),
     canViewAlerts: can(user, 'alerts.view'),
     canViewMaintenance: can(user, 'maintenance.view'),
+    canManageHeadquarters: can(user, 'settings.headquarters.manage'),
+    canManageLocations: can(user, 'settings.locations.manage'),
+    canViewSettings: can(user, 'settings.headquarters.view') || can(user, 'settings.locations.view'),
   }
 
   const metrics = alertMetrics({
@@ -250,9 +270,17 @@ export function useInventoryWorkspace({
       .then(setEquipmentCatalogs)
       .catch(() => setEquipmentCatalogs(null))
 
+    refreshSettingsData()
+  }
+
+  function refreshSettingsData() {
     getHeadquarters()
       .then(setHeadquarters)
       .catch(() => setHeadquarters([]))
+
+    getLocations()
+      .then(setLocations)
+      .catch(() => setLocations([]))
   }
 
   function handleChangeEquipmentFilters(filters: EquipmentFilters) {
@@ -345,6 +373,75 @@ export function useInventoryWorkspace({
     await refreshOperationalData()
   }
 
+  async function handleFinishSchedule(
+    schedule: MaintenanceSchedule,
+    payload: FinishMaintenanceSchedulePayload
+  ) {
+    if (!schedule.equipment?.id) {
+      return
+    }
+
+    await createMaintenanceRecord({
+      equipmentId: schedule.equipment.id,
+      maintenanceScheduleId: schedule.id,
+      maintenanceType: schedule.maintenanceType as 'preventive' | 'corrective',
+      priority: schedule.priority,
+      scheduledDate: schedule.scheduledFor,
+      status: 'completed',
+      ...payload,
+    })
+    showSuccess('Mantenimiento finalizado', 'El registro tecnico quedo asociado al cronograma.')
+    await refreshOperationalData()
+  }
+
+  async function handleExportEquipment() {
+    const filters = {
+      ...equipmentFilters,
+      page: 1,
+      perPage: 100,
+    }
+    const firstPage = await getEquipment(filters)
+    const allEquipment = [...firstPage.data]
+
+    for (let page = 2; page <= firstPage.meta.lastPage; page += 1) {
+      const response = await getEquipment({ ...filters, page })
+      allEquipment.push(...response.data)
+    }
+
+    downloadEquipmentCsv(allEquipment)
+  }
+
+  async function handleDownloadEquipmentImportTemplate() {
+    downloadEquipmentImportTemplate(equipmentCatalogs)
+  }
+
+  async function handleImportEquipment(file: File): Promise<EquipmentImportResult> {
+    const parsed = await readEquipmentImportFile(file, equipmentCatalogs)
+    const errors = [...parsed.errors]
+    let created = 0
+
+    for (const row of parsed.rows) {
+      try {
+        await createEquipment(row.payload)
+        created += 1
+      } catch {
+        errors.push(`Fila ${row.rowNumber}: no fue posible crear el equipo.`)
+      }
+    }
+
+    await refreshCoreData()
+    showSuccess(
+      'Carga masiva procesada',
+      `${created} equipo${created === 1 ? '' : 's'} creado${created === 1 ? '' : 's'}.`
+    )
+
+    return {
+      created,
+      errors,
+      total: parsed.rows.length,
+    }
+  }
+
   function handleRunAlertChecks() {
     setIsRunningAlerts(true)
     runAlertChecks()
@@ -385,6 +482,7 @@ export function useInventoryWorkspace({
     setLifeSheet(null)
     setLifeSheetStatus('idle')
     setHeadquarters([])
+    setLocations([])
     setMaintenanceStatus('loading')
     setAlertsStatus('loading')
     setActiveView('inventory')
@@ -402,6 +500,10 @@ export function useInventoryWorkspace({
       handleChangeEquipmentFilters,
       handleCreateSchedule,
       handleDeleteEquipment,
+      handleDownloadEquipmentImportTemplate,
+      handleExportEquipment,
+      handleFinishSchedule,
+      handleImportEquipment,
       handleRunAlertChecks,
       handleScheduleAction,
       handleSelectEquipment,
@@ -417,6 +519,26 @@ export function useInventoryWorkspace({
       setIsEquipmentFormOpen,
       setIsScheduleFormOpen,
       startMaintenanceSchedule,
+      createHeadquarter: async (payload: HeadquarterPayload) => {
+        await createHeadquarter(payload)
+        await refreshSettingsData()
+        await refreshCoreData()
+      },
+      createLocation: async (payload: LocationPayload) => {
+        await createLocation(payload)
+        await refreshSettingsData()
+        await refreshCoreData()
+      },
+      deactivateHeadquarter: async (headquarterId: string) => {
+        await deactivateHeadquarter(headquarterId)
+        await refreshSettingsData()
+        await refreshCoreData()
+      },
+      deactivateLocation: async (locationId: string) => {
+        await deactivateLocation(locationId)
+        await refreshSettingsData()
+        await refreshCoreData()
+      },
       acknowledgeAlert,
       assignEquipment: async (userId: string, notes?: string) => {
         if (!selectedEquipmentId) return
@@ -429,6 +551,7 @@ export function useInventoryWorkspace({
           equipmentId: selectedEquipmentId,
           ...payload,
         })
+        showSuccess('Falla reportada', 'Se creo una alerta para que el equipo tecnico la atienda.')
         await refreshOperationalData()
       },
       createMaintenanceRecord: async (payload: {
@@ -471,6 +594,16 @@ export function useInventoryWorkspace({
         await uploadEquipmentAttachment(selectedEquipmentId, file)
         await refreshOperationalData()
       },
+      updateHeadquarter: async (headquarterId: string, payload: HeadquarterPayload) => {
+        await updateHeadquarter(headquarterId, payload)
+        await refreshSettingsData()
+        await refreshCoreData()
+      },
+      updateLocation: async (locationId: string, payload: LocationPayload) => {
+        await updateLocation(locationId, payload)
+        await refreshSettingsData()
+        await refreshCoreData()
+      },
     },
     metrics,
     permissions,
@@ -486,6 +619,7 @@ export function useInventoryWorkspace({
       equipmentFormMode,
       equipmentMeta,
       headquarters,
+      locations,
       isEquipmentFormOpen,
       isRunningAlerts,
       isScheduleFormOpen,
@@ -498,4 +632,65 @@ export function useInventoryWorkspace({
       status,
     },
   }
+}
+
+function downloadEquipmentCsv(equipment: Equipment[]) {
+  const headers = [
+    'Codigo',
+    'Serial',
+    'Tipo',
+    'Marca',
+    'Modelo',
+    'Estado',
+    'Propiedad',
+    'IP',
+    'MAC',
+    'Procesador',
+    'Almacenamiento',
+    'Sede',
+    'Ubicacion',
+    'Responsable',
+    'Responsable secundario',
+    'Ultimo mantenimiento',
+    'Proximo mantenimiento',
+    'Notas',
+  ]
+  const rows = equipment.map((item) => [
+    item.internalCode,
+    item.serial,
+    item.type,
+    item.brand,
+    item.model,
+    item.status,
+    item.ownershipType,
+    item.ipAddresses,
+    item.macAddress,
+    item.processor,
+    [item.storageType, item.storageCapacityGb ? `${item.storageCapacityGb} GB` : null]
+      .filter(Boolean)
+      .join(' / '),
+    item.headquarter?.name,
+    [item.location?.area, item.location?.office].filter(Boolean).join(' / '),
+    item.currentResponsible?.name,
+    item.secondaryResponsible?.name,
+    item.lastMaintenanceAt,
+    item.nextMaintenanceAt,
+    item.notes,
+  ])
+  const csv = [headers, ...rows].map((row) => row.map(csvCell).join(';')).join('\r\n')
+  const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' })
+  const url = window.URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `inventario-equipos-${new Date().toISOString().slice(0, 10)}.csv`
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  window.URL.revokeObjectURL(url)
+}
+
+function csvCell(value: string | number | null | undefined) {
+  const text = value === null || value === undefined ? '' : String(value)
+
+  return `"${text.replace(/"/g, '""')}"`
 }

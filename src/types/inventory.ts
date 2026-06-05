@@ -181,9 +181,11 @@ export type MaintenanceRecord = {
 
 export type CreateMaintenanceRecordPayload = {
   equipmentId: string
+  maintenanceScheduleId?: string
   maintenanceType: 'preventive' | 'corrective'
   status?: string
   priority?: string
+  scheduledDate?: string
   performedAt?: string
   performedBy?: string
   description?: string
@@ -192,6 +194,17 @@ export type CreateMaintenanceRecordPayload = {
   partsReplaced?: string
   cost?: number
   nextMaintenanceAt?: string
+}
+
+export type FinishMaintenanceSchedulePayload = {
+  actionsTaken?: string
+  cost?: number
+  description?: string
+  diagnosis?: string
+  nextMaintenanceAt?: string
+  partsReplaced?: string
+  performedAt?: string
+  performedBy?: string
 }
 
 export type CreateFailureReportPayload = {
@@ -333,7 +346,36 @@ export type Headquarter = {
   name: string
   city: string | null
   address: string | null
+  description?: string | null
   isActive: boolean
+}
+
+export type HeadquarterPayload = {
+  address?: string
+  city?: string
+  description?: string
+  isActive?: boolean
+  name: string
+}
+
+export type Location = {
+  id: string
+  headquarterId: string
+  floor: string | null
+  area: string | null
+  office: string | null
+  description: string | null
+  isActive: boolean
+  headquarter?: Headquarter
+}
+
+export type LocationPayload = {
+  area?: string
+  description?: string
+  floor?: string
+  headquarterId: string
+  isActive?: boolean
+  office?: string
 }
 
 export type PaginationMeta = {

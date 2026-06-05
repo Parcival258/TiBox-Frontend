@@ -1,4 +1,4 @@
-export type ActiveView = 'inventory' | 'maintenance' | 'cases' | 'alerts'
+export type ActiveView = 'inventory' | 'maintenance' | 'settings' | 'cases' | 'alerts'
 export type AuthState = 'checking' | 'authenticated' | 'guest' | 'submitting'
 export type LifeSheetState = 'idle' | 'loading' | 'ready' | 'error'
 export type LoadState = 'loading' | 'ready' | 'error'

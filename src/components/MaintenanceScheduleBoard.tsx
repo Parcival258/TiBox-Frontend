@@ -1,4 +1,5 @@
-import type { MaintenanceSchedule } from '../types/inventory'
+import { useState, type FormEvent } from 'react'
+import type { FinishMaintenanceSchedulePayload, MaintenanceSchedule } from '../types/inventory'
 import { AppLoader } from './Loaders'
 import {
   maintenanceStatusLabel,
@@ -14,7 +15,10 @@ type MaintenanceScheduleBoardProps = {
   status: 'loading' | 'ready' | 'error'
   onCancel: (scheduleId: string) => void
   onCreateSchedule: () => void
-  onFinish: (scheduleId: string) => void
+  onFinish: (
+    schedule: MaintenanceSchedule,
+    payload: FinishMaintenanceSchedulePayload
+  ) => Promise<void>
   onMarkPending: (scheduleId: string) => void
   onReschedule: (scheduleId: string, scheduledFor: string) => void
   onStart: (scheduleId: string) => void
@@ -55,13 +59,14 @@ export function MaintenanceScheduleBoard({
   schedules,
   status,
 }: MaintenanceScheduleBoardProps) {
+  const [scheduleToFinish, setScheduleToFinish] = useState<MaintenanceSchedule | null>(null)
   const openSchedules = schedules.filter((schedule) =>
     ['scheduled', 'pending', 'in_progress', 'rescheduled', 'overdue'].includes(schedule.status)
   )
   const tomorrow = new Date()
   tomorrow.setDate(tomorrow.getDate() + 1)
   const tomorrowKey = tomorrow.toISOString().slice(0, 10)
-  const tomorrowCount = schedules.filter((schedule) =>
+  const tomorrowCount = openSchedules.filter((schedule) =>
     schedule.scheduledFor?.startsWith(tomorrowKey)
   ).length
 
@@ -108,9 +113,9 @@ export function MaintenanceScheduleBoard({
         <div className="px-4 py-12 text-center text-sm text-red-200">
           No fue posible cargar el cronograma.
         </div>
-      ) : schedules.length === 0 ? (
+      ) : openSchedules.length === 0 ? (
         <div className="px-4 py-12 text-center text-sm text-slate-400">
-          No hay mantenimientos programados.
+          No hay mantenimientos abiertos.
         </div>
       ) : (
         <div className="overflow-x-auto">
@@ -127,7 +132,7 @@ export function MaintenanceScheduleBoard({
               </tr>
             </thead>
             <tbody>
-              {schedules.map((schedule) => (
+              {openSchedules.map((schedule) => (
                 <tr key={schedule.id} className="border-t border-slate-800">
                   <td className="px-4 py-3 text-white">{formatDate(schedule.scheduledFor)}</td>
                   <td className="px-4 py-3 text-slate-300">{equipmentName(schedule)}</td>
@@ -155,7 +160,7 @@ export function MaintenanceScheduleBoard({
                           </>
                         )}
                         {canClose && (
-                          <ActionButton label="Finalizar" onClick={() => onFinish(schedule.id)} />
+                          <ActionButton label="Finalizar" onClick={() => setScheduleToFinish(schedule)} />
                         )}
                       </div>
                     ) : (
@@ -168,12 +173,191 @@ export function MaintenanceScheduleBoard({
           </table>
         </div>
       )}
+      <FinishMaintenanceModal
+        schedule={scheduleToFinish}
+        onClose={() => setScheduleToFinish(null)}
+        onSubmit={async (payload) => {
+          if (!scheduleToFinish) {
+            return
+          }
+
+          await onFinish(scheduleToFinish, payload)
+          setScheduleToFinish(null)
+        }}
+      />
     </section>
   )
 }
 
 function countByStatus(schedules: MaintenanceSchedule[], status: string) {
   return schedules.filter((schedule) => schedule.status === status).length
+}
+
+function FinishMaintenanceModal({
+  onClose,
+  onSubmit,
+  schedule,
+}: {
+  onClose: () => void
+  onSubmit: (payload: FinishMaintenanceSchedulePayload) => Promise<void>
+  schedule: MaintenanceSchedule | null
+}) {
+  const [description, setDescription] = useState('')
+  const [diagnosis, setDiagnosis] = useState('')
+  const [actionsTaken, setActionsTaken] = useState('')
+  const [partsReplaced, setPartsReplaced] = useState('')
+  const [cost, setCost] = useState('')
+  const [nextMaintenanceAt, setNextMaintenanceAt] = useState('')
+  const [performedAt, setPerformedAt] = useState(() => new Date().toISOString().slice(0, 10))
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [hasError, setHasError] = useState(false)
+
+  if (!schedule) {
+    return null
+  }
+
+  const activeSchedule = schedule
+
+  async function handleSubmit(event: FormEvent) {
+    event.preventDefault()
+    setIsSubmitting(true)
+    setHasError(false)
+
+    try {
+      await onSubmit({
+        actionsTaken: actionsTaken || undefined,
+        cost: cost ? Number(cost) : undefined,
+        description: description || undefined,
+        diagnosis: diagnosis || undefined,
+        nextMaintenanceAt: nextMaintenanceAt || undefined,
+        partsReplaced: partsReplaced || undefined,
+        performedAt: performedAt || undefined,
+        performedBy: activeSchedule.assignedTechnician?.id,
+      })
+      setDescription('')
+      setDiagnosis('')
+      setActionsTaken('')
+      setPartsReplaced('')
+      setCost('')
+      setNextMaintenanceAt('')
+      setPerformedAt(new Date().toISOString().slice(0, 10))
+    } catch {
+      setHasError(true)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/80 px-4 py-6">
+      <form
+        className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-lg border border-slate-700 bg-slate-900 p-5 shadow-2xl"
+        onSubmit={handleSubmit}
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-xs uppercase tracking-wide text-cyan-300">Finalizar mantenimiento</p>
+            <h3 className="mt-1 text-lg font-semibold text-white">{equipmentName(schedule)}</h3>
+            <p className="mt-1 text-sm text-slate-400">
+              {schedule.assignedTechnician?.name ?? 'Sin tecnico asignado'} / {formatDate(schedule.scheduledFor)}
+            </p>
+          </div>
+          <button
+            className="rounded-md border border-slate-700 px-2.5 py-1 text-sm text-slate-300 transition hover:border-slate-500 hover:text-white"
+            type="button"
+            onClick={onClose}
+          >
+            Cerrar
+          </button>
+        </div>
+
+        {hasError && (
+          <p className="mt-4 rounded-md border border-red-900 bg-red-950/30 px-3 py-2 text-sm text-red-200">
+            No fue posible finalizar el mantenimiento.
+          </p>
+        )}
+
+        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+          <Input label="Fecha realizada" type="date" value={performedAt} onChange={setPerformedAt} />
+          <Input label="Costo" type="number" value={cost} onChange={setCost} />
+        </div>
+        <div className="mt-4 grid gap-4">
+          <Textarea label="Descripcion" value={description} onChange={setDescription} />
+          <Textarea label="Diagnostico" value={diagnosis} onChange={setDiagnosis} />
+          <Textarea label="Acciones realizadas" value={actionsTaken} onChange={setActionsTaken} />
+          <Textarea label="Partes reemplazadas" value={partsReplaced} onChange={setPartsReplaced} />
+          <Input
+            label="Proximo mantenimiento"
+            type="date"
+            value={nextMaintenanceAt}
+            onChange={setNextMaintenanceAt}
+          />
+        </div>
+
+        <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <button
+            className="rounded-md border border-slate-700 px-4 py-2 text-sm font-medium text-slate-300 transition hover:border-slate-500 hover:text-white"
+            type="button"
+            onClick={onClose}
+          >
+            Cancelar
+          </button>
+          <button
+            className="rounded-md border border-cyan-700 px-4 py-2 text-sm font-medium text-cyan-100 transition hover:border-cyan-400 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={isSubmitting || !diagnosis || !actionsTaken}
+            type="submit"
+          >
+            {isSubmitting ? 'Guardando...' : 'Finalizar'}
+          </button>
+        </div>
+      </form>
+    </div>
+  )
+}
+
+function Input({
+  label,
+  onChange,
+  type = 'text',
+  value,
+}: {
+  label: string
+  onChange: (value: string) => void
+  type?: string
+  value: string
+}) {
+  return (
+    <label className="block text-sm">
+      <span className="text-slate-500">{label}</span>
+      <input
+        className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-200 outline-none transition focus:border-cyan-500"
+        type={type}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+      />
+    </label>
+  )
+}
+
+function Textarea({
+  label,
+  onChange,
+  value,
+}: {
+  label: string
+  onChange: (value: string) => void
+  value: string
+}) {
+  return (
+    <label className="block text-sm">
+      <span className="text-slate-500">{label}</span>
+      <textarea
+        className="mt-1 min-h-24 w-full resize-y rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-200 outline-none transition focus:border-cyan-500"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+      />
+    </label>
+  )
 }
 
 function Metric({ label, value }: { label: string; value: number }) {

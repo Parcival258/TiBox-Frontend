@@ -1,5 +1,5 @@
 import { MaintenanceScheduleBoard } from '../components/MaintenanceScheduleBoard'
-import type { MaintenanceSchedule } from '../types/inventory'
+import type { FinishMaintenanceSchedulePayload, MaintenanceSchedule } from '../types/inventory'
 import type { ModuleState } from '../types/ui'
 
 type MaintenancePageProps = {
@@ -10,7 +10,10 @@ type MaintenancePageProps = {
   status: ModuleState
   onCancel: (scheduleId: string) => void
   onCreateSchedule: () => void
-  onFinish: (scheduleId: string) => void
+  onFinish: (
+    schedule: MaintenanceSchedule,
+    payload: FinishMaintenanceSchedulePayload
+  ) => Promise<void>
   onMarkPending: (scheduleId: string) => void
   onReschedule: (scheduleId: string, scheduledFor: string) => void
   onStart: (scheduleId: string) => void

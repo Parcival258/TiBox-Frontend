@@ -11,6 +11,7 @@ import type {
   PaginationMeta,
 } from '../types/inventory'
 import type { LifeSheetState } from '../types/ui'
+import type { EquipmentImportResult } from '../utils/equipmentBulkImport'
 
 type InventoryPageProps = {
   canAssignEquipment: boolean
@@ -46,7 +47,10 @@ type InventoryPageProps = {
   }) => Promise<void>
   onDeleteAttachment: (attachmentId: string) => Promise<void>
   onDeleteEquipment: (equipmentId: string) => void
+  onDownloadImportTemplate: () => Promise<void>
   onEditEquipment: (equipment: Equipment) => void
+  onExportEquipment: () => Promise<void>
+  onImportEquipment: (file: File) => Promise<EquipmentImportResult>
   onResolveFailure: (failureReportId: string) => Promise<void>
   onReturnEquipment: (notes?: string) => Promise<void>
   onSelectEquipment: (equipmentId: string) => void
@@ -76,7 +80,10 @@ export function InventoryPage({
   onCreateMaintenanceRecord,
   onDeleteAttachment,
   onDeleteEquipment,
+  onDownloadImportTemplate,
   onEditEquipment,
+  onExportEquipment,
+  onImportEquipment,
   onResolveFailure,
   onReturnEquipment,
   onSelectEquipment,
@@ -98,7 +105,10 @@ export function InventoryPage({
         onChangeFilters={onChangeFilters}
         onCreateEquipment={onCreateEquipment}
         onDeleteEquipment={onDeleteEquipment}
+        onDownloadImportTemplate={onDownloadImportTemplate}
         onEditEquipment={onEditEquipment}
+        onExportEquipment={onExportEquipment}
+        onImportEquipment={onImportEquipment}
         onSelectEquipment={onSelectEquipment}
       />
       <div className="space-y-6">

@@ -5,6 +5,7 @@ type AppNavigationProps = {
   alertAttentionCount: number
   canViewAlerts: boolean
   canViewMaintenance: boolean
+  canViewSettings: boolean
   myCaseCount: number
   onChangeView: (view: ActiveView) => void
 }
@@ -14,6 +15,7 @@ export function AppNavigation({
   alertAttentionCount,
   canViewAlerts,
   canViewMaintenance,
+  canViewSettings,
   myCaseCount,
   onChangeView,
 }: AppNavigationProps) {
@@ -29,6 +31,13 @@ export function AppNavigation({
           active={activeView === 'maintenance'}
           label="Cronograma"
           onClick={() => onChangeView('maintenance')}
+        />
+      )}
+      {canViewSettings && (
+        <TabButton
+          active={activeView === 'settings'}
+          label="Sedes"
+          onClick={() => onChangeView('settings')}
         />
       )}
       {canViewAlerts && (

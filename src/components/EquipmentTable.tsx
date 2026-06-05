@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react'
 import type {
   Equipment,
   EquipmentCatalogs,
@@ -6,6 +6,7 @@ import type {
   PaginationMeta,
 } from '../types/inventory'
 import { equipmentStatusLabel, ownershipTypeLabel } from '../utils/enumLabels'
+import type { EquipmentImportResult } from '../utils/equipmentBulkImport'
 
 type EquipmentTableProps = {
   canCreate: boolean
@@ -17,7 +18,10 @@ type EquipmentTableProps = {
   onChangeFilters: (filters: EquipmentFilters) => void
   onCreateEquipment: () => void
   onDeleteEquipment: (equipmentId: string) => void
+  onDownloadImportTemplate: () => Promise<void>
   onEditEquipment: (equipment: Equipment) => void
+  onExportEquipment: () => Promise<void>
+  onImportEquipment: (file: File) => Promise<EquipmentImportResult>
   onSelectEquipment: (equipmentId: string) => void
   pagination: PaginationMeta | null
   selectedEquipmentId: string | null
@@ -33,12 +37,19 @@ export function EquipmentTable({
   onChangeFilters,
   onCreateEquipment,
   onDeleteEquipment,
+  onDownloadImportTemplate,
   onEditEquipment,
+  onExportEquipment,
+  onImportEquipment,
   onSelectEquipment,
   pagination,
   selectedEquipmentId,
 }: EquipmentTableProps) {
   const [search, setSearch] = useState(filters.search ?? '')
+  const [isExporting, setIsExporting] = useState(false)
+  const [isImporting, setIsImporting] = useState(false)
+  const [importResult, setImportResult] = useState<EquipmentImportResult | null>(null)
+  const importInputRef = useRef<HTMLInputElement | null>(null)
 
   useEffect(() => {
     setSearch(filters.search ?? '')
@@ -67,6 +78,34 @@ export function EquipmentTable({
     })
   }
 
+  async function handleExport() {
+    setIsExporting(true)
+
+    try {
+      await onExportEquipment()
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  async function handleImport(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+
+    if (!file) {
+      return
+    }
+
+    setIsImporting(true)
+    setImportResult(null)
+
+    try {
+      setImportResult(await onImportEquipment(file))
+    } finally {
+      setIsImporting(false)
+      event.target.value = ''
+    }
+  }
+
   const currentPage = pagination?.currentPage ?? filters.page ?? 1
   const lastPage = pagination?.lastPage ?? 1
 
@@ -74,10 +113,44 @@ export function EquipmentTable({
     <div className="overflow-hidden rounded-lg border border-slate-800 bg-slate-900">
       <div className="flex flex-col gap-3 border-b border-slate-800 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
         <h2 className="text-base font-medium text-white">Inventario de equipos</h2>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <span className="text-sm text-slate-400">
             {pagination?.total ?? equipment.length} registros
           </span>
+          {canCreate && (
+            <>
+              <button
+                className="rounded-md border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:border-slate-500 hover:text-white"
+                type="button"
+                onClick={onDownloadImportTemplate}
+              >
+                Descargar formato
+              </button>
+              <button
+                className="rounded-md border border-indigo-700 px-3 py-1.5 text-xs font-medium text-indigo-100 transition hover:border-indigo-400 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={isImporting}
+                type="button"
+                onClick={() => importInputRef.current?.click()}
+              >
+                {isImporting ? 'Cargando...' : 'Carga masiva'}
+              </button>
+              <input
+                ref={importInputRef}
+                accept=".xlsx,.csv,.txt"
+                className="hidden"
+                type="file"
+                onChange={handleImport}
+              />
+            </>
+          )}
+          <button
+            className="rounded-md border border-emerald-700 px-3 py-1.5 text-xs font-medium text-emerald-100 transition hover:border-emerald-400 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={isExporting || (pagination?.total ?? equipment.length) === 0}
+            type="button"
+            onClick={handleExport}
+          >
+            {isExporting ? 'Exportando...' : 'Exportar Excel'}
+          </button>
           {canCreate && (
             <button
               className="rounded-md border border-cyan-700 px-3 py-1.5 text-xs font-medium text-cyan-100 transition hover:border-cyan-400 hover:text-white"
@@ -89,6 +162,24 @@ export function EquipmentTable({
           )}
         </div>
       </div>
+
+      {importResult && (
+        <div className="border-b border-slate-800 bg-slate-950/70 px-4 py-3 text-sm">
+          <p className="text-slate-300">
+            Carga masiva: {importResult.created} creados de {importResult.total} filas validas.
+          </p>
+          {importResult.errors.length > 0 && (
+            <details className="mt-2 text-amber-200">
+              <summary className="cursor-pointer">Ver observaciones ({importResult.errors.length})</summary>
+              <ul className="mt-2 space-y-1 text-xs text-amber-100">
+                {importResult.errors.slice(0, 12).map((error) => (
+                  <li key={error}>{error}</li>
+                ))}
+              </ul>
+            </details>
+          )}
+        </div>
+      )}
 
       <form
         className="grid gap-3 border-b border-slate-800 px-4 py-4 md:grid-cols-2 lg:grid-cols-[minmax(220px,1.5fr)_minmax(140px,1fr)_minmax(140px,1fr)_minmax(150px,1fr)_110px_auto]"

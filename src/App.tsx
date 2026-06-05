@@ -16,6 +16,7 @@ import { AlertsPage } from './pages/AlertsPage'
 import { InventoryPage } from './pages/InventoryPage'
 import { MaintenancePage } from './pages/MaintenancePage'
 import { MyCasesPage } from './pages/MyCasesPage'
+import { SettingsPage } from './pages/SettingsPage'
 import { getCurrentUser, login, logout } from './services/auth'
 import type { User } from './types/inventory'
 import type { AuthState } from './types/ui'
@@ -123,6 +124,7 @@ function App() {
           alertAttentionCount={metrics.alertAttentionCount}
           canViewAlerts={permissions.canViewAlerts}
           canViewMaintenance={permissions.canViewMaintenance}
+          canViewSettings={permissions.canViewSettings}
           myCaseCount={metrics.myCaseCount}
           onChangeView={actions.setActiveView}
         />
@@ -153,7 +155,10 @@ function App() {
             onCreateMaintenanceRecord={actions.createMaintenanceRecord}
             onDeleteAttachment={actions.deleteAttachment}
             onDeleteEquipment={actions.handleDeleteEquipment}
+            onDownloadImportTemplate={actions.handleDownloadEquipmentImportTemplate}
             onEditEquipment={actions.openEditEquipment}
+            onExportEquipment={actions.handleExportEquipment}
+            onImportEquipment={actions.handleImportEquipment}
             onResolveFailure={actions.resolveFailure}
             onReturnEquipment={actions.returnEquipment}
             onSelectEquipment={actions.handleSelectEquipment}
@@ -172,9 +177,7 @@ function App() {
               actions.handleScheduleAction(() => actions.cancelMaintenanceSchedule(scheduleId))
             }
             onCreateSchedule={() => actions.setIsScheduleFormOpen(true)}
-            onFinish={(scheduleId) =>
-              actions.handleScheduleAction(() => actions.finishMaintenanceSchedule(scheduleId))
-            }
+            onFinish={actions.handleFinishSchedule}
             onMarkPending={(scheduleId) =>
               actions.handleScheduleAction(() => actions.markMaintenancePending(scheduleId))
             }
@@ -186,6 +189,21 @@ function App() {
             onStart={(scheduleId) =>
               actions.handleScheduleAction(() => actions.startMaintenanceSchedule(scheduleId))
             }
+          />
+        )}
+
+        {state.activeView === 'settings' && permissions.canViewSettings && (
+          <SettingsPage
+            canManageHeadquarters={permissions.canManageHeadquarters}
+            canManageLocations={permissions.canManageLocations}
+            headquarters={state.headquarters}
+            locations={state.locations}
+            onCreateHeadquarter={actions.createHeadquarter}
+            onCreateLocation={actions.createLocation}
+            onDeactivateHeadquarter={actions.deactivateHeadquarter}
+            onDeactivateLocation={actions.deactivateLocation}
+            onUpdateHeadquarter={actions.updateHeadquarter}
+            onUpdateLocation={actions.updateLocation}
           />
         )}
 
