@@ -61,7 +61,7 @@ function App() {
         setAuthStatus('authenticated')
       })
       .catch(() => {
-        setLoginError('Credenciales inválidas o backend no disponible.')
+        setLoginError('Credenciales invÃ¡lidas o backend no disponible.')
         setAuthStatus('guest')
       })
   }

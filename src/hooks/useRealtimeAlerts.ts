@@ -191,10 +191,10 @@ export function useRealtimeAlerts({
     if (payload.event === 'alerts:dismissed') {
       callbacksRef.current.onNotify({
         subText: payload.alert.title,
-        title: 'Tu reporte fue cerrado en notificaciones',
+        title: 'La notificacion de tu reporte fue archivada',
         type: 'ticket',
       })
-      callbacksRef.current.showSuccess('Tu reporte fue cerrado en notificaciones', payload.alert.title)
+      callbacksRef.current.showSuccess('La notificacion de tu reporte fue archivada', payload.alert.title)
     }
   }
 }
