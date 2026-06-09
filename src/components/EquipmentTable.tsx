@@ -5,6 +5,7 @@ import type {
   EquipmentFilters,
   PaginationMeta,
 } from '../types/inventory'
+import { InfoNotice } from './InfoNotice'
 import { equipmentStatusLabel, ownershipTypeLabel } from '../utils/enumLabels'
 import type { EquipmentImportResult } from '../utils/equipmentBulkImport'
 
@@ -49,6 +50,7 @@ export function EquipmentTable({
   const [isExporting, setIsExporting] = useState(false)
   const [isImporting, setIsImporting] = useState(false)
   const [importResult, setImportResult] = useState<EquipmentImportResult | null>(null)
+  const [showBulkInfo, setShowBulkInfo] = useState(true)
   const importInputRef = useRef<HTMLInputElement | null>(null)
 
   useEffect(() => {
@@ -162,6 +164,14 @@ export function EquipmentTable({
           )}
         </div>
       </div>
+
+      {canCreate && showBulkInfo && (
+        <InfoNotice
+          message="Carga masiva"
+          subText="Puedes descargar el formato para hacer una carga masiva de tus equipos."
+          onClose={() => setShowBulkInfo(false)}
+        />
+      )}
 
       {importResult && (
         <div className="border-b border-slate-800 bg-slate-950/70 px-4 py-3 text-sm">

@@ -1,12 +1,23 @@
+import { useEffect } from 'react'
+
 type SuccessNoticeProps = {
+  autoCloseMs?: number
   message: string
   onClose?: () => void
   subText?: string
 }
 
-export function SuccessNotice({ message, onClose, subText }: SuccessNoticeProps) {
+export function SuccessNotice({ autoCloseMs = 3200, message, onClose, subText }: SuccessNoticeProps) {
+  useEffect(() => {
+    if (!onClose) return
+
+    const timeout = window.setTimeout(onClose, autoCloseMs)
+
+    return () => window.clearTimeout(timeout)
+  }, [autoCloseMs, onClose])
+
   return (
-    <div className="relative flex min-h-20 w-full items-center gap-4 overflow-hidden rounded-lg border border-emerald-100 bg-white px-4 py-3 text-slate-800 shadow-lg shadow-slate-950/10 sm:max-w-[330px]">
+    <div className="notice-toast relative flex min-h-20 w-[calc(100vw-2rem)] items-center gap-4 overflow-hidden rounded-lg border border-emerald-100 bg-white px-4 py-3 text-slate-800 shadow-lg shadow-slate-950/10 sm:max-w-[330px]">
       <svg
         aria-hidden="true"
         className="absolute -left-8 top-8 h-20 w-20 rotate-90 fill-emerald-400/25"

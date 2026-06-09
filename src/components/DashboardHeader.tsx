@@ -1,8 +1,15 @@
+import { NotificationBell } from './NotificationBell'
+import type { NotificationItem } from '../hooks/useNotificationInbox'
+
 type DashboardHeaderProps = {
+  notifications: NotificationItem[]
   status: 'loading' | 'ready' | 'error'
   theme: 'dark' | 'light'
+  unreadNotifications: number
   userName: string
+  onClearNotifications: () => void
   onLogout: () => void
+  onMarkNotificationsRead: () => void
   onToggleTheme: () => void
 }
 
@@ -13,10 +20,14 @@ const statusLabel = {
 }
 
 export function DashboardHeader({
+  notifications,
+  onClearNotifications,
   status,
   theme,
+  unreadNotifications,
   userName,
   onLogout,
+  onMarkNotificationsRead,
   onToggleTheme,
 }: DashboardHeaderProps) {
   return (
@@ -33,6 +44,12 @@ export function DashboardHeader({
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2 text-sm text-slate-400">
           <span>{userName}</span>
+          <NotificationBell
+            notifications={notifications}
+            unreadCount={unreadNotifications}
+            onClear={onClearNotifications}
+            onMarkAllRead={onMarkNotificationsRead}
+          />
           <label className="theme-toggle-switch" title={theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}>
             <span className="sr-only">{theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}</span>
             <input

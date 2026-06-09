@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { emptyDashboard } from '../constants/dashboard'
 import { defaultEquipmentFilters } from '../constants/equipmentFilters'
+import { useNotificationInbox } from './useNotificationInbox'
+import { useRealtimeAlerts } from './useRealtimeAlerts'
 import {
   acknowledgeAlert,
   addAlertNote,
@@ -104,6 +106,7 @@ export function useInventoryWorkspace({
   const [editingEquipment, setEditingEquipment] = useState<Equipment | null>(null)
   const [isEquipmentFormOpen, setIsEquipmentFormOpen] = useState(false)
   const [isScheduleFormOpen, setIsScheduleFormOpen] = useState(false)
+  const notificationInbox = useNotificationInbox(user?.id ?? null)
 
   const permissions = {
     canAssignEquipment: can(user, 'equipment.assign'),
@@ -115,6 +118,7 @@ export function useInventoryWorkspace({
     canManageAlerts: can(user, 'alerts.manage'),
     canManageEquipmentAttachments: can(user, 'equipment.attachments.manage'),
     canManageFailureReports: can(user, 'failure_reports.manage'),
+    canViewFailureReports: can(user, 'failure_reports.view'),
     canReturnEquipment: can(user, 'equipment.return'),
     canUpdateEquipment: can(user, 'equipment.update'),
     canUpdateMaintenance: can(user, 'maintenance.update'),
@@ -227,13 +231,7 @@ export function useInventoryWorkspace({
   }
 
   function handleDeleteEquipment(equipmentId: string) {
-    const shouldDelete = window.confirm('Retirar este equipo del inventario?')
-
-    if (!shouldDelete) {
-      return
-    }
-
-    deleteEquipment(equipmentId)
+    return deleteEquipment(equipmentId)
       .then(async () => {
         if (selectedEquipmentId === equipmentId) {
           setSelectedEquipmentId(null)
@@ -273,14 +271,15 @@ export function useInventoryWorkspace({
     refreshSettingsData()
   }
 
-  function refreshSettingsData() {
-    getHeadquarters()
-      .then(setHeadquarters)
-      .catch(() => setHeadquarters([]))
-
-    getLocations()
-      .then(setLocations)
-      .catch(() => setLocations([]))
+  async function refreshSettingsData() {
+    await Promise.all([
+      getHeadquarters()
+        .then(setHeadquarters)
+        .catch(() => setHeadquarters([])),
+      getLocations()
+        .then(setLocations)
+        .catch(() => setLocations([])),
+    ])
   }
 
   function handleChangeEquipmentFilters(filters: EquipmentFilters) {
@@ -350,7 +349,7 @@ export function useInventoryWorkspace({
 
   function refreshAlerts() {
     setAlertsStatus('loading')
-    getAlerts()
+    return getAlerts()
       .then((response) => {
         setAlerts(response)
         setAlertsStatus('ready')
@@ -489,6 +488,22 @@ export function useInventoryWorkspace({
     setStatus('loading')
   }
 
+  useRealtimeAlerts({
+    canHandleFailureQueue: permissions.canManageFailureReports,
+    canManageAlerts: permissions.canManageAlerts,
+    canTrackReportedTickets: permissions.canViewFailureReports,
+    canViewAlerts: permissions.canViewAlerts,
+    enabled:
+      authStatus === 'authenticated' &&
+      (permissions.canViewAlerts || permissions.canViewFailureReports),
+    onDashboardRefresh: () => getDashboard().then(setDashboard),
+    onNotify: notificationInbox.addNotification,
+    onRefresh: refreshAlerts,
+    onTicketRefresh: refreshOperationalData,
+    showSuccess,
+    userId: user?.id ?? null,
+  })
+
   return {
     actions: {
       addAlertNote,
@@ -523,21 +538,25 @@ export function useInventoryWorkspace({
         await createHeadquarter(payload)
         await refreshSettingsData()
         await refreshCoreData()
+        showSuccess('Sede creada', 'La sede quedo disponible para asignar ubicaciones.')
       },
       createLocation: async (payload: LocationPayload) => {
         await createLocation(payload)
         await refreshSettingsData()
         await refreshCoreData()
+        showSuccess('Ubicacion creada', 'La ubicacion quedo disponible para los equipos.')
       },
       deactivateHeadquarter: async (headquarterId: string) => {
         await deactivateHeadquarter(headquarterId)
         await refreshSettingsData()
         await refreshCoreData()
+        showSuccess('Sede desactivada', 'La sede ya no queda activa para nuevas asignaciones.')
       },
       deactivateLocation: async (locationId: string) => {
         await deactivateLocation(locationId)
         await refreshSettingsData()
         await refreshCoreData()
+        showSuccess('Ubicacion desactivada', 'La ubicacion ya no queda activa para nuevas asignaciones.')
       },
       acknowledgeAlert,
       assignEquipment: async (userId: string, notes?: string) => {
@@ -598,14 +617,22 @@ export function useInventoryWorkspace({
         await updateHeadquarter(headquarterId, payload)
         await refreshSettingsData()
         await refreshCoreData()
+        showSuccess('Sede actualizada', 'Los cambios quedaron guardados.')
       },
       updateLocation: async (locationId: string, payload: LocationPayload) => {
         await updateLocation(locationId, payload)
         await refreshSettingsData()
         await refreshCoreData()
+        showSuccess('Ubicacion actualizada', 'Los cambios quedaron guardados.')
       },
     },
     metrics,
+    notifications: {
+      clear: notificationInbox.clearNotifications,
+      items: notificationInbox.notifications,
+      markAllAsRead: notificationInbox.markAllAsRead,
+      unreadCount: notificationInbox.unreadCount,
+    },
     permissions,
     state: {
       activeView,

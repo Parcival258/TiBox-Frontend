@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { AlertNotice } from './components/AlertNotice'
 import { AppNavigation } from './components/AppNavigation'
+import { ConfirmDialog } from './components/ConfirmDialog'
 import { DashboardHeader } from './components/DashboardHeader'
 import { EquipmentFormModal } from './components/EquipmentFormModal'
 import { LandingPage } from './components/LandingPage'
@@ -27,9 +28,15 @@ function App() {
   const [showLogin, setShowLogin] = useState(false)
   const [user, setUser] = useState<User | null>(null)
   const [loginError, setLoginError] = useState<string | null>(null)
+  const [confirmAction, setConfirmAction] = useState<{
+    confirmLabel?: string
+    message: string
+    onConfirm: () => void
+    title: string
+  } | null>(null)
   const { clearSuccess, showSuccess, successNotice } = useSuccessNotice()
   const { theme, toggleTheme } = useThemeMode()
-  const { actions, metrics, permissions, state } = useInventoryWorkspace({
+  const { actions, metrics, notifications, permissions, state } = useInventoryWorkspace({
     authStatus,
     showSuccess,
     user,
@@ -68,6 +75,17 @@ function App() {
     })
   }
 
+  function requestConfirmation(action: NonNullable<typeof confirmAction>) {
+    setConfirmAction(action)
+  }
+
+  function runConfirmedAction() {
+    const action = confirmAction
+
+    setConfirmAction(null)
+    action?.onConfirm()
+  }
+
   if (authStatus === 'checking') {
     return (
       <main className="flex min-h-screen items-center justify-center bg-slate-950 px-5 text-sm text-slate-300">
@@ -94,10 +112,14 @@ function App() {
     <main className="min-h-screen bg-slate-950 text-slate-100">
       <div className="mx-auto flex min-h-screen w-full max-w-[1600px] flex-col px-4 py-6 sm:px-6 xl:px-8">
         <DashboardHeader
+          notifications={notifications.items}
           status={state.status}
           theme={theme}
+          unreadNotifications={notifications.unreadCount}
           userName={user?.name ?? 'Usuario'}
+          onClearNotifications={notifications.clear}
           onLogout={handleLogout}
+          onMarkNotificationsRead={notifications.markAllAsRead}
           onToggleTheme={toggleTheme}
         />
         <MetricGrid dashboard={state.dashboard} />
@@ -111,13 +133,11 @@ function App() {
           />
         )}
         {successNotice && (
-          <div className="mb-5 flex justify-end">
-            <SuccessNotice
-              message={successNotice.message}
-              subText={successNotice.subText}
-              onClose={clearSuccess}
-            />
-          </div>
+          <SuccessNotice
+            message={successNotice.message}
+            subText={successNotice.subText}
+            onClose={clearSuccess}
+          />
         )}
         <AppNavigation
           activeView={state.activeView}
@@ -154,7 +174,14 @@ function App() {
             onCreateFailure={actions.createFailure}
             onCreateMaintenanceRecord={actions.createMaintenanceRecord}
             onDeleteAttachment={actions.deleteAttachment}
-            onDeleteEquipment={actions.handleDeleteEquipment}
+            onDeleteEquipment={(equipmentId) =>
+              requestConfirmation({
+                confirmLabel: 'Retirar equipo',
+                message: 'El equipo saldra del inventario activo. Su historial se conserva para consulta.',
+                onConfirm: () => actions.handleDeleteEquipment(equipmentId),
+                title: 'Confirmar retiro',
+              })
+            }
             onDownloadImportTemplate={actions.handleDownloadEquipmentImportTemplate}
             onEditEquipment={actions.openEditEquipment}
             onExportEquipment={actions.handleExportEquipment}
@@ -200,8 +227,22 @@ function App() {
             locations={state.locations}
             onCreateHeadquarter={actions.createHeadquarter}
             onCreateLocation={actions.createLocation}
-            onDeactivateHeadquarter={actions.deactivateHeadquarter}
-            onDeactivateLocation={actions.deactivateLocation}
+            onDeactivateHeadquarter={(headquarterId) =>
+              requestConfirmation({
+                confirmLabel: 'Desactivar sede',
+                message: 'La sede quedara inactiva para nuevas asignaciones. Las ubicaciones y equipos existentes no se eliminan.',
+                onConfirm: () => actions.deactivateHeadquarter(headquarterId),
+                title: 'Confirmar desactivacion',
+              })
+            }
+            onDeactivateLocation={(locationId) =>
+              requestConfirmation({
+                confirmLabel: 'Desactivar ubicacion',
+                message: 'La ubicacion quedara inactiva para nuevas asignaciones. Los equipos ya asociados conservan su historial.',
+                onConfirm: () => actions.deactivateLocation(locationId),
+                title: 'Confirmar desactivacion',
+              })
+            }
             onUpdateHeadquarter={actions.updateHeadquarter}
             onUpdateLocation={actions.updateLocation}
           />
@@ -266,6 +307,14 @@ function App() {
           isOpen={state.isScheduleFormOpen}
           onClose={() => actions.setIsScheduleFormOpen(false)}
           onSubmit={actions.handleCreateSchedule}
+        />
+        <ConfirmDialog
+          confirmLabel={confirmAction?.confirmLabel}
+          isOpen={Boolean(confirmAction)}
+          message={confirmAction?.message ?? ''}
+          title={confirmAction?.title ?? ''}
+          onCancel={() => setConfirmAction(null)}
+          onConfirm={runConfirmedAction}
         />
       </div>
     </main>

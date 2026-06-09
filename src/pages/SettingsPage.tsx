@@ -1,4 +1,6 @@
 import { useMemo, useState, type FormEvent } from 'react'
+import { ErrorNotice } from '../components/ErrorNotice'
+import { InfoNotice } from '../components/InfoNotice'
 import type { Headquarter, HeadquarterPayload, Location, LocationPayload } from '../types/inventory'
 
 type SettingsPageProps = {
@@ -8,8 +10,8 @@ type SettingsPageProps = {
   locations: Location[]
   onCreateHeadquarter: (payload: HeadquarterPayload) => Promise<void>
   onCreateLocation: (payload: LocationPayload) => Promise<void>
-  onDeactivateHeadquarter: (headquarterId: string) => Promise<void>
-  onDeactivateLocation: (locationId: string) => Promise<void>
+  onDeactivateHeadquarter: (headquarterId: string) => void
+  onDeactivateLocation: (locationId: string) => void
   onUpdateHeadquarter: (headquarterId: string, payload: HeadquarterPayload) => Promise<void>
   onUpdateLocation: (locationId: string, payload: LocationPayload) => Promise<void>
 }
@@ -66,6 +68,8 @@ export function SettingsPage({
   const [headquarterForm, setHeadquarterForm] = useState<HeadquarterForm>(emptyHeadquarterForm)
   const [locationForm, setLocationForm] = useState<LocationForm>(emptyLocationForm)
   const [submitState, setSubmitState] = useState<'idle' | 'submitting' | 'error'>('idle')
+  const [errorNotice, setErrorNotice] = useState<{ message: string; subText: string } | null>(null)
+  const [showHierarchyInfo, setShowHierarchyInfo] = useState(true)
 
   const activeHeadquarterId = selectedHeadquarterId || headquarters[0]?.id || ''
   const selectedHeadquarter = headquarters.find((headquarter) => headquarter.id === activeHeadquarterId)
@@ -120,8 +124,13 @@ export function SettingsPage({
 
       setHeadquarterForm(emptyHeadquarterForm)
       setEditingHeadquarterId(null)
+      setErrorNotice(null)
       setSubmitState('idle')
     } catch {
+      setErrorNotice({
+        message: 'Error al guardar sede',
+        subText: 'Revisa el nombre, permisos o conexion con el backend.',
+      })
       setSubmitState('error')
     }
   }
@@ -144,8 +153,13 @@ export function SettingsPage({
 
       setLocationForm({ ...emptyLocationForm, headquarterId: activeHeadquarterId })
       setEditingLocationId(null)
+      setErrorNotice(null)
       setSubmitState('idle')
     } catch {
+      setErrorNotice({
+        message: 'Error al guardar ubicacion',
+        subText: 'Revisa la sede seleccionada, permisos o conexion con el backend.',
+      })
       setSubmitState('error')
     }
   }
@@ -224,12 +238,25 @@ export function SettingsPage({
               Sede / piso / area / oficina
             </p>
           </div>
-          {submitState === 'error' && (
-            <p className="rounded-md border border-red-900 bg-red-950/30 px-3 py-2 text-sm text-red-200">
-              No fue posible guardar los cambios.
-            </p>
+          {errorNotice && (
+            <ErrorNotice
+              message={errorNotice.message}
+              subText={errorNotice.subText}
+              onClose={() => {
+                setErrorNotice(null)
+                setSubmitState('idle')
+              }}
+            />
           )}
         </div>
+
+        {showHierarchyInfo && (
+          <InfoNotice
+            message="Jerarquia de ubicaciones"
+            subText="Primero selecciona la sede; luego registra ubicaciones por piso, area y oficina."
+            onClose={() => setShowHierarchyInfo(false)}
+          />
+        )}
 
         <div className="overflow-x-auto">
           <table className="w-full min-w-[760px] text-left text-sm">
