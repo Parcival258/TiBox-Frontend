@@ -1,7 +1,8 @@
-import { EquipmentLifeSheet } from '../components/EquipmentLifeSheet'
-import { EquipmentOperationsPanel } from '../components/EquipmentOperationsPanel'
+import { EquipmentDetailView } from '../components/equipmentDetail/EquipmentDetailView'
+import { EquipmentSummaryPanel } from '../components/equipmentDetail/EquipmentSummaryPanel'
 import { EquipmentTable } from '../components/EquipmentTable'
 import { HeadquartersPanel } from '../components/HeadquartersPanel'
+import { useState } from 'react'
 import type {
   Equipment,
   EquipmentCatalogs,
@@ -51,6 +52,7 @@ type InventoryPageProps = {
   onEditEquipment: (equipment: Equipment) => void
   onExportEquipment: () => Promise<void>
   onImportEquipment: (file: File) => Promise<EquipmentImportResult>
+  onOpenEquipmentDetails: (equipmentId: string) => Promise<void>
   onResolveFailure: (failureReportId: string) => Promise<void>
   onReturnEquipment: (notes?: string) => Promise<void>
   onSelectEquipment: (equipmentId: string) => void
@@ -84,6 +86,7 @@ export function InventoryPage({
   onEditEquipment,
   onExportEquipment,
   onImportEquipment,
+  onOpenEquipmentDetails,
   onResolveFailure,
   onReturnEquipment,
   onSelectEquipment,
@@ -91,8 +94,34 @@ export function InventoryPage({
   pagination,
   selectedEquipmentId,
 }: InventoryPageProps) {
+  const [isDetailViewOpen, setIsDetailViewOpen] = useState(false)
+
+  if (isDetailViewOpen) {
+    return (
+      <EquipmentDetailView
+        canAssignEquipment={canAssignEquipment}
+        canCreateFailureReports={canCreateFailureReports}
+        canCreateMaintenance={canCreateMaintenance}
+        canManageEquipmentAttachments={canManageEquipmentAttachments}
+        canManageFailureReports={canManageFailureReports}
+        canReturnEquipment={canReturnEquipment}
+        catalogs={catalogs}
+        lifeSheet={lifeSheet}
+        lifeSheetStatus={lifeSheetStatus}
+        onAssignEquipment={onAssignEquipment}
+        onBack={() => setIsDetailViewOpen(false)}
+        onCreateFailure={onCreateFailure}
+        onCreateMaintenanceRecord={onCreateMaintenanceRecord}
+        onDeleteAttachment={onDeleteAttachment}
+        onResolveFailure={onResolveFailure}
+        onReturnEquipment={onReturnEquipment}
+        onUploadAttachment={onUploadAttachment}
+      />
+    )
+  }
+
   return (
-    <section className="grid flex-1 gap-6 xl:grid-cols-[minmax(0,1fr)_420px] 2xl:grid-cols-[minmax(0,1fr)_440px]">
+    <section className="grid flex-1 gap-6 xl:grid-cols-[minmax(0,1fr)_360px] 2xl:grid-cols-[minmax(0,1fr)_380px]">
       <EquipmentTable
         canCreate={canCreateEquipment}
         canDelete={canDeleteEquipment}
@@ -109,30 +138,17 @@ export function InventoryPage({
         onEditEquipment={onEditEquipment}
         onExportEquipment={onExportEquipment}
         onImportEquipment={onImportEquipment}
+        onOpenEquipmentDetails={(equipmentId) => {
+          setIsDetailViewOpen(true)
+          onOpenEquipmentDetails(equipmentId)
+        }}
         onSelectEquipment={onSelectEquipment}
       />
       <div className="space-y-6">
-        <EquipmentLifeSheet
-          canResolveFailures={canManageFailureReports}
+        <EquipmentSummaryPanel
           lifeSheet={lifeSheet}
           status={lifeSheetStatus}
-          onDeleteAttachment={canManageEquipmentAttachments ? onDeleteAttachment : undefined}
-          onResolveFailure={canManageFailureReports ? onResolveFailure : undefined}
-        />
-        <EquipmentOperationsPanel
-          canAssign={canAssignEquipment}
-          canCreateFailure={canCreateFailureReports}
-          canCreateMaintenance={canCreateMaintenance}
-          canReturn={canReturnEquipment}
-          canUploadAttachment={canManageEquipmentAttachments}
-          catalogs={catalogs}
-          lifeSheet={lifeSheet}
-          status={lifeSheetStatus}
-          onAssign={onAssignEquipment}
-          onCreateFailure={onCreateFailure}
-          onCreateMaintenance={onCreateMaintenanceRecord}
-          onReturn={onReturnEquipment}
-          onUploadAttachment={onUploadAttachment}
+          onOpenDetails={() => setIsDetailViewOpen(true)}
         />
         <HeadquartersPanel headquarters={headquarters} />
       </div>

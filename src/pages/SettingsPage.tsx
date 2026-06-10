@@ -1,6 +1,12 @@
 import { useMemo, useState, type FormEvent } from 'react'
 import { ErrorNotice } from '../components/ErrorNotice'
 import { InfoNotice } from '../components/InfoNotice'
+import {
+  ContextActionMenu,
+  type ContextMenuState,
+} from '../components/contextActionMenu/ContextActionMenu'
+import { AddItemButton } from '../components/settings/AddItemButton'
+import { FloatingFormPanel } from '../components/settings/FloatingFormPanel'
 import type { Headquarter, HeadquarterPayload, Location, LocationPayload } from '../types/inventory'
 
 type SettingsPageProps = {
@@ -65,8 +71,11 @@ export function SettingsPage({
   const [selectedHeadquarterId, setSelectedHeadquarterId] = useState(headquarters[0]?.id ?? '')
   const [editingHeadquarterId, setEditingHeadquarterId] = useState<string | null>(null)
   const [editingLocationId, setEditingLocationId] = useState<string | null>(null)
+  const [contextMenu, setContextMenu] = useState<ContextMenuState>(null)
   const [headquarterForm, setHeadquarterForm] = useState<HeadquarterForm>(emptyHeadquarterForm)
   const [locationForm, setLocationForm] = useState<LocationForm>(emptyLocationForm)
+  const [showHeadquarterForm, setShowHeadquarterForm] = useState(false)
+  const [showLocationForm, setShowLocationForm] = useState(false)
   const [submitState, setSubmitState] = useState<'idle' | 'submitting' | 'error'>('idle')
   const [errorNotice, setErrorNotice] = useState<{ message: string; subText: string } | null>(null)
   const [showHierarchyInfo, setShowHierarchyInfo] = useState(true)
@@ -88,6 +97,7 @@ export function SettingsPage({
 
   function editHeadquarter(headquarter: Headquarter) {
     setEditingHeadquarterId(headquarter.id)
+    setShowHeadquarterForm(true)
     setHeadquarterForm({
       address: headquarter.address ?? '',
       city: headquarter.city ?? '',
@@ -99,6 +109,7 @@ export function SettingsPage({
 
   function editLocation(location: Location) {
     setEditingLocationId(location.id)
+    setShowLocationForm(true)
     setLocationForm({
       area: location.area ?? '',
       description: location.description ?? '',
@@ -124,6 +135,7 @@ export function SettingsPage({
 
       setHeadquarterForm(emptyHeadquarterForm)
       setEditingHeadquarterId(null)
+      setShowHeadquarterForm(false)
       setErrorNotice(null)
       setSubmitState('idle')
     } catch {
@@ -153,6 +165,7 @@ export function SettingsPage({
 
       setLocationForm({ ...emptyLocationForm, headquarterId: activeHeadquarterId })
       setEditingLocationId(null)
+      setShowLocationForm(false)
       setErrorNotice(null)
       setSubmitState('idle')
     } catch {
@@ -167,9 +180,21 @@ export function SettingsPage({
   return (
     <section className="grid flex-1 gap-6 xl:grid-cols-[minmax(360px,420px)_minmax(0,1fr)]">
       <div className="rounded-lg border border-slate-800 bg-slate-900">
-        <div className="border-b border-slate-800 px-4 py-4">
-          <p className="text-xs uppercase tracking-wide text-cyan-300">Configuracion</p>
-          <h2 className="mt-1 text-lg font-semibold text-white">Sedes</h2>
+        <div className="flex flex-col gap-3 border-b border-slate-800 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-wide text-cyan-300">Configuracion</p>
+            <h2 className="mt-1 text-lg font-semibold text-white">Sedes</h2>
+          </div>
+          {canManageHeadquarters && (
+            <AddItemButton
+              label="Sede"
+              onClick={() => {
+                setEditingHeadquarterId(null)
+                setHeadquarterForm(emptyHeadquarterForm)
+                setShowHeadquarterForm(true)
+              }}
+            />
+          )}
         </div>
 
         <div className="divide-y divide-slate-800">
@@ -181,6 +206,47 @@ export function SettingsPage({
               }`}
               type="button"
               onClick={() => setSelectedHeadquarterId(headquarter.id)}
+              onContextMenu={(event) => {
+                event.preventDefault()
+                setSelectedHeadquarterId(headquarter.id)
+                if (!canManageHeadquarters) {
+                  return
+                }
+
+                setContextMenu({
+                  x: event.clientX,
+                  y: event.clientY,
+                  actions: [
+                    {
+                      icon: 'edit',
+                      label: 'Editar sede',
+                      onSelect: () => editHeadquarter(headquarter),
+                    },
+                    headquarter.isActive
+                      ? {
+                          icon: 'trash',
+                          label: 'Desactivar sede',
+                          onSelect: () => onDeactivateHeadquarter(headquarter.id),
+                          separatorBefore: true,
+                          tone: 'danger',
+                        }
+                      : {
+                          icon: 'check',
+                          label: 'Activar sede',
+                          onSelect: () =>
+                            onUpdateHeadquarter(headquarter.id, headquarterPayload({
+                              address: headquarter.address ?? '',
+                              city: headquarter.city ?? '',
+                              description: headquarter.description ?? '',
+                              isActive: true,
+                              name: headquarter.name,
+                            })),
+                          separatorBefore: true,
+                          tone: 'success',
+                        },
+                  ],
+                })
+              }}
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
@@ -195,36 +261,6 @@ export function SettingsPage({
           ))}
         </div>
 
-        {canManageHeadquarters && (
-          <form className="space-y-3 border-t border-slate-800 p-4" onSubmit={submitHeadquarter}>
-            <h3 className="text-sm font-semibold text-white">
-              {editingHeadquarterId ? 'Editar sede' : 'Nueva sede'}
-            </h3>
-            <Input label="Nombre" required value={headquarterForm.name} onChange={(value) => setHeadquarterField('name', value)} />
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Input label="Ciudad" value={headquarterForm.city} onChange={(value) => setHeadquarterField('city', value)} />
-              <Input label="Direccion" value={headquarterForm.address} onChange={(value) => setHeadquarterField('address', value)} />
-            </div>
-            <Textarea
-              label="Descripcion"
-              value={headquarterForm.description}
-              onChange={(value) => setHeadquarterField('description', value)}
-            />
-            <Checkbox
-              checked={headquarterForm.isActive}
-              label="Sede activa"
-              onChange={(value) => setHeadquarterField('isActive', value)}
-            />
-            <FormActions
-              canCancel={Boolean(editingHeadquarterId)}
-              isSubmitting={submitState === 'submitting'}
-              onCancel={() => {
-                setEditingHeadquarterId(null)
-                setHeadquarterForm(emptyHeadquarterForm)
-              }}
-            />
-          </form>
-        )}
       </div>
 
       <div className="rounded-lg border border-slate-800 bg-slate-900">
@@ -238,6 +274,16 @@ export function SettingsPage({
               Sede / piso / area / oficina
             </p>
           </div>
+          {canManageLocations && (
+            <AddItemButton
+              label="Ubicacion"
+              onClick={() => {
+                setEditingLocationId(null)
+                setLocationForm({ ...emptyLocationForm, headquarterId: activeHeadquarterId })
+                setShowLocationForm(true)
+              }}
+            />
+          )}
           {errorNotice && (
             <ErrorNotice
               message={errorNotice.message}
@@ -259,7 +305,7 @@ export function SettingsPage({
         )}
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[760px] text-left text-sm">
+          <table className="w-full min-w-[680px] text-left text-sm">
             <thead className="bg-slate-950 text-slate-400">
               <tr>
                 <th className="px-4 py-3 font-medium">Piso</th>
@@ -267,66 +313,129 @@ export function SettingsPage({
                 <th className="px-4 py-3 font-medium">Oficina</th>
                 <th className="px-4 py-3 font-medium">Descripcion</th>
                 <th className="px-4 py-3 font-medium">Estado</th>
-                <th className="px-4 py-3 font-medium">Acciones</th>
               </tr>
             </thead>
             <tbody>
               {visibleLocations.length === 0 ? (
                 <tr>
-                  <td className="px-4 py-10 text-center text-slate-400" colSpan={6}>
+                  <td className="px-4 py-10 text-center text-slate-400" colSpan={5}>
                     Esta sede no tiene ubicaciones registradas.
                   </td>
                 </tr>
               ) : (
                 visibleLocations.map((location) => (
-                  <tr key={location.id} className="border-t border-slate-800">
+                  <tr
+                    key={location.id}
+                    className="app-click-row border-t border-slate-800"
+                    tabIndex={0}
+                    onClick={() => {
+                      if (canManageLocations) {
+                        editLocation(location)
+                      }
+                    }}
+                    onContextMenu={(event) => {
+                      event.preventDefault()
+                      if (!canManageLocations) {
+                        return
+                      }
+
+                      setContextMenu({
+                        x: event.clientX,
+                        y: event.clientY,
+                        actions: [
+                          {
+                            icon: 'edit',
+                            label: 'Editar ubicacion',
+                            onSelect: () => editLocation(location),
+                          },
+                          location.isActive
+                            ? {
+                                icon: 'trash',
+                                label: 'Desactivar',
+                                onSelect: () => onDeactivateLocation(location.id),
+                                separatorBefore: true,
+                                tone: 'danger',
+                              }
+                            : {
+                                icon: 'check',
+                                label: 'Activar',
+                                onSelect: () =>
+                                  onUpdateLocation(location.id, locationPayload({
+                                    area: location.area ?? '',
+                                    description: location.description ?? '',
+                                    floor: location.floor ?? '',
+                                    headquarterId: location.headquarterId,
+                                    isActive: true,
+                                    office: location.office ?? '',
+                                  })),
+                                separatorBefore: true,
+                                tone: 'success',
+                              },
+                        ],
+                      })
+                    }}
+                  >
                     <td className="px-4 py-3 text-slate-300">{location.floor || 'Sin piso'}</td>
                     <td className="px-4 py-3 text-white">{location.area || 'Sin area'}</td>
                     <td className="px-4 py-3 text-slate-300">{location.office || 'Sin oficina'}</td>
                     <td className="px-4 py-3 text-slate-400">{location.description || 'Sin descripcion'}</td>
                     <td className="px-4 py-3"><StatusPill isActive={location.isActive} /></td>
-                    <td className="px-4 py-3">
-                      <div className="flex flex-wrap gap-2">
-                        {canManageLocations && (
-                          <>
-                            <ActionButton label="Editar" onClick={() => editLocation(location)} />
-                            {location.isActive ? (
-                              <ActionButton
-                                label="Desactivar"
-                                tone="danger"
-                                onClick={() => onDeactivateLocation(location.id)}
-                              />
-                            ) : (
-                              <ActionButton
-                                label="Activar"
-                                onClick={() => onUpdateLocation(location.id, locationPayload({
-                                  area: location.area ?? '',
-                                  description: location.description ?? '',
-                                  floor: location.floor ?? '',
-                                  headquarterId: location.headquarterId,
-                                  isActive: true,
-                                  office: location.office ?? '',
-                                }))}
-                              />
-                            )}
-                          </>
-                        )}
-                      </div>
-                    </td>
                   </tr>
                 ))
               )}
             </tbody>
           </table>
         </div>
+      </div>
 
-        {canManageLocations && (
-          <form className="grid gap-3 border-t border-slate-800 p-4 lg:grid-cols-2" onSubmit={submitLocation}>
-            <div className="lg:col-span-2">
-              <h3 className="text-sm font-semibold text-white">
-                {editingLocationId ? 'Editar ubicacion' : 'Nueva ubicacion'}
-              </h3>
+      {canManageHeadquarters && showHeadquarterForm && (
+        <FloatingFormPanel
+          title={editingHeadquarterId ? 'Editar sede' : 'Nueva sede'}
+          onClose={() => {
+            setEditingHeadquarterId(null)
+            setHeadquarterForm(emptyHeadquarterForm)
+            setShowHeadquarterForm(false)
+          }}
+        >
+          <form className="space-y-3" onSubmit={submitHeadquarter}>
+            <Input label="Nombre" required value={headquarterForm.name} onChange={(value) => setHeadquarterField('name', value)} />
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Input label="Ciudad" value={headquarterForm.city} onChange={(value) => setHeadquarterField('city', value)} />
+              <Input label="Direccion" value={headquarterForm.address} onChange={(value) => setHeadquarterField('address', value)} />
             </div>
+            <Textarea
+              label="Descripcion"
+              value={headquarterForm.description}
+              onChange={(value) => setHeadquarterField('description', value)}
+            />
+            <Checkbox
+              checked={headquarterForm.isActive}
+              label="Sede activa"
+              onChange={(value) => setHeadquarterField('isActive', value)}
+            />
+            <FormActions
+              canCancel
+              isSubmitting={submitState === 'submitting'}
+              onCancel={() => {
+                setEditingHeadquarterId(null)
+                setHeadquarterForm(emptyHeadquarterForm)
+                setShowHeadquarterForm(false)
+              }}
+            />
+          </form>
+        </FloatingFormPanel>
+      )}
+
+      {canManageLocations && showLocationForm && (
+        <FloatingFormPanel
+          title={editingLocationId ? 'Editar ubicacion' : 'Nueva ubicacion'}
+          onClose={() => {
+            setEditingLocationId(null)
+            setLocationForm({ ...emptyLocationForm, headquarterId: activeHeadquarterId })
+            setShowLocationForm(false)
+          }}
+        >
+          <form className="grid gap-3 lg:grid-cols-2" onSubmit={submitLocation}>
             <Select
               label="Sede"
               value={locationForm.headquarterId || activeHeadquarterId}
@@ -350,41 +459,19 @@ export function SettingsPage({
             />
             <div className="flex items-end justify-end">
               <FormActions
-                canCancel={Boolean(editingLocationId)}
+                canCancel
                 isSubmitting={submitState === 'submitting'}
                 onCancel={() => {
                   setEditingLocationId(null)
                   setLocationForm({ ...emptyLocationForm, headquarterId: activeHeadquarterId })
+                  setShowLocationForm(false)
                 }}
               />
             </div>
           </form>
-        )}
-
-        {canManageHeadquarters && selectedHeadquarter && (
-          <div className="flex flex-wrap gap-2 border-t border-slate-800 px-4 py-3">
-            <ActionButton label="Editar sede seleccionada" onClick={() => editHeadquarter(selectedHeadquarter)} />
-            {selectedHeadquarter.isActive ? (
-              <ActionButton
-                label="Desactivar sede"
-                tone="danger"
-                onClick={() => onDeactivateHeadquarter(selectedHeadquarter.id)}
-              />
-            ) : (
-              <ActionButton
-                label="Activar sede"
-                onClick={() => onUpdateHeadquarter(selectedHeadquarter.id, headquarterPayload({
-                  address: selectedHeadquarter.address ?? '',
-                  city: selectedHeadquarter.city ?? '',
-                  description: selectedHeadquarter.description ?? '',
-                  isActive: true,
-                  name: selectedHeadquarter.name,
-                }))}
-              />
-            )}
-          </div>
-        )}
-      </div>
+        </FloatingFormPanel>
+      )}
+      <ContextActionMenu menu={contextMenu} onClose={() => setContextMenu(null)} />
     </section>
   )
 }
@@ -423,30 +510,6 @@ function StatusPill({ isActive }: { isActive: boolean }) {
     }`}>
       {isActive ? 'Activa' : 'Inactiva'}
     </span>
-  )
-}
-
-function ActionButton({
-  label,
-  onClick,
-  tone = 'default',
-}: {
-  label: string
-  onClick: () => void
-  tone?: 'default' | 'danger'
-}) {
-  const toneClass = tone === 'danger'
-    ? 'border-red-800 text-red-200 hover:border-red-500'
-    : 'border-slate-700 text-slate-300 hover:border-cyan-500'
-
-  return (
-    <button
-      className={`rounded-md border px-3 py-1.5 text-xs font-medium transition hover:text-white ${toneClass}`}
-      type="button"
-      onClick={onClick}
-    >
-      {label}
-    </button>
   )
 }
 

@@ -8,6 +8,10 @@ import type {
 import { InfoNotice } from './InfoNotice'
 import { equipmentStatusLabel, ownershipTypeLabel } from '../utils/enumLabels'
 import type { EquipmentImportResult } from '../utils/equipmentBulkImport'
+import {
+  ContextActionMenu,
+  type ContextMenuState,
+} from './contextActionMenu/ContextActionMenu'
 
 type EquipmentTableProps = {
   canCreate: boolean
@@ -23,9 +27,41 @@ type EquipmentTableProps = {
   onEditEquipment: (equipment: Equipment) => void
   onExportEquipment: () => Promise<void>
   onImportEquipment: (file: File) => Promise<EquipmentImportResult>
+  onOpenEquipmentDetails: (equipmentId: string) => void
   onSelectEquipment: (equipmentId: string) => void
   pagination: PaginationMeta | null
   selectedEquipmentId: string | null
+}
+
+const inventoryTips = [
+  {
+    message: 'Tip de inventario',
+    subText: 'Haz click en una fila para ver el resumen del equipo sin abrir formularios.',
+  },
+  {
+    message: 'Acciones rapidas',
+    subText: 'Usa click derecho sobre un equipo para editarlo, retirarlo o enfocar su detalle.',
+  },
+  {
+    message: 'Busqueda precisa',
+    subText: 'Puedes buscar por codigo, serial, direccion IP o MAC para ubicar equipos mas rapido.',
+  },
+  {
+    message: 'Carga masiva',
+    subText: 'Descarga el formato antes de importar para evitar errores de columnas o datos faltantes.',
+  },
+  {
+    message: 'Revision de responsables',
+    subText: 'Filtra y revisa equipos sin asignar para mantener claro quien responde por cada activo.',
+  },
+]
+
+function getInitialInventoryTip() {
+  if (Math.random() < 0.35) {
+    return null
+  }
+
+  return inventoryTips[Math.floor(Math.random() * inventoryTips.length)]
 }
 
 export function EquipmentTable({
@@ -42,6 +78,7 @@ export function EquipmentTable({
   onEditEquipment,
   onExportEquipment,
   onImportEquipment,
+  onOpenEquipmentDetails,
   onSelectEquipment,
   pagination,
   selectedEquipmentId,
@@ -50,7 +87,8 @@ export function EquipmentTable({
   const [isExporting, setIsExporting] = useState(false)
   const [isImporting, setIsImporting] = useState(false)
   const [importResult, setImportResult] = useState<EquipmentImportResult | null>(null)
-  const [showBulkInfo, setShowBulkInfo] = useState(true)
+  const [contextMenu, setContextMenu] = useState<ContextMenuState>(null)
+  const [activeTip, setActiveTip] = useState(getInitialInventoryTip)
   const importInputRef = useRef<HTMLInputElement | null>(null)
 
   useEffect(() => {
@@ -165,11 +203,11 @@ export function EquipmentTable({
         </div>
       </div>
 
-      {canCreate && showBulkInfo && (
+      {canCreate && activeTip && (
         <InfoNotice
-          message="Carga masiva"
-          subText="Puedes descargar el formato para hacer una carga masiva de tus equipos."
-          onClose={() => setShowBulkInfo(false)}
+          message={activeTip.message}
+          subText={activeTip.subText}
+          onClose={() => setActiveTip(null)}
         />
       )}
 
@@ -269,15 +307,14 @@ export function EquipmentTable({
         <div className="overflow-x-auto">
           <table className="w-full min-w-[980px] table-fixed text-left text-sm">
             <colgroup>
-              <col className="w-[8%]" />
-              <col className="w-[8%]" />
+              <col className="w-[9%]" />
+              <col className="w-[9%]" />
               <col className="w-[12%]" />
               <col className="w-[13%]" />
               <col className="w-[13%]" />
               <col className="w-[11%]" />
-              <col className="w-[16%]" />
-              <col className="w-[11%]" />
-              <col className="w-[8%]" />
+              <col className="w-[18%]" />
+              <col className="w-[15%]" />
             </colgroup>
             <thead className="bg-slate-950 text-slate-400">
               <tr>
@@ -289,18 +326,54 @@ export function EquipmentTable({
                 <th className="px-4 py-3 font-medium">Estado</th>
                 <th className="px-4 py-3 font-medium">Ubicacion</th>
                 <th className="px-4 py-3 font-medium">Responsable</th>
-                <th className="px-4 py-3 font-medium">Acciones</th>
               </tr>
             </thead>
             <tbody>
               {equipment.map((item) => (
                 <tr
                   key={item.id}
+                  tabIndex={0}
                   className={
                     item.id === selectedEquipmentId
-                      ? 'border-t border-cyan-800 bg-cyan-950/30'
-                      : 'border-t border-slate-800'
+                      ? 'app-click-row border-t border-cyan-800 bg-cyan-950/30'
+                      : 'app-click-row border-t border-slate-800'
                   }
+                  onClick={() => onSelectEquipment(item.id)}
+                  onContextMenu={(event) => {
+                    event.preventDefault()
+                    onSelectEquipment(item.id)
+                    setContextMenu({
+                      x: event.clientX,
+                      y: event.clientY,
+                      actions: [
+                        {
+                          icon: 'eye',
+                          label: 'Ver detalle',
+                          onSelect: () => onOpenEquipmentDetails(item.id),
+                        },
+                        ...(canUpdate
+                          ? [
+                              {
+                                icon: 'edit' as const,
+                                label: 'Editar',
+                                onSelect: () => onEditEquipment(item),
+                              },
+                            ]
+                          : []),
+                        ...(canDelete
+                          ? [
+                              {
+                                icon: 'trash' as const,
+                                label: 'Retirar',
+                                onSelect: () => onDeleteEquipment(item.id),
+                                separatorBefore: true,
+                                tone: 'danger' as const,
+                              },
+                            ]
+                          : []),
+                      ],
+                    })
+                  }}
                 >
                   <td className="break-words px-4 py-3 text-white">{item.internalCode}</td>
                   <td className="break-words px-4 py-3 text-slate-300">{item.serial}</td>
@@ -332,41 +405,14 @@ export function EquipmentTable({
                       .filter(Boolean)
                       .join(' / ') || 'Sin asignar'}
                   </td>
-                  <td className="px-4 py-3">
-                    <div className="flex flex-col gap-2">
-                      <button
-                        className="w-full rounded-md border border-cyan-700 px-2 py-1.5 text-xs font-medium text-cyan-200 transition hover:border-cyan-400 hover:text-white"
-                        type="button"
-                        onClick={() => onSelectEquipment(item.id)}
-                      >
-                        Ver detalle
-                      </button>
-                      {canUpdate && (
-                        <button
-                          className="w-full rounded-md border border-slate-700 px-2 py-1.5 text-xs font-medium text-slate-300 transition hover:border-slate-500 hover:text-white"
-                          type="button"
-                          onClick={() => onEditEquipment(item)}
-                        >
-                          Editar
-                        </button>
-                      )}
-                      {canDelete && (
-                        <button
-                          className="w-full rounded-md border border-red-800 px-2 py-1.5 text-xs font-medium text-red-200 transition hover:border-red-500 hover:text-white"
-                          type="button"
-                          onClick={() => onDeleteEquipment(item.id)}
-                        >
-                          Retirar
-                        </button>
-                      )}
-                    </div>
-                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       )}
+
+      <ContextActionMenu menu={contextMenu} onClose={() => setContextMenu(null)} />
 
       <div className="flex flex-col gap-3 border-t border-slate-800 px-4 py-3 text-sm text-slate-400 sm:flex-row sm:items-center sm:justify-between">
         <span>

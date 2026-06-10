@@ -11,6 +11,7 @@ type AlertsPageProps = {
   status: ModuleState
   onAcknowledge: (alertId: string) => void
   onAssign: (alertId: string, assignedTo: string) => void
+  onDismiss: (alertId: string) => void
   onResolve: (alertId: string) => void
   onRunChecks: () => void
   onSelfAssign: (alertId: string) => void

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { AlertNotice } from './components/AlertNotice'
-import { AppNavigation } from './components/AppNavigation'
+import { AppNavigation } from './components/AppNavigation/AppNavigation'
 import { ConfirmDialog } from './components/ConfirmDialog'
 import { DashboardHeader } from './components/DashboardHeader'
 import { EquipmentFormModal } from './components/EquipmentFormModal'
@@ -18,6 +18,7 @@ import { InventoryPage } from './pages/InventoryPage'
 import { MaintenancePage } from './pages/MaintenancePage'
 import { MyCasesPage } from './pages/MyCasesPage'
 import { SettingsPage } from './pages/SettingsPage'
+import { UserManagementPage } from './pages/UserManagementPage'
 import { getCurrentUser, login, logout } from './services/auth'
 import type { User } from './types/inventory'
 import type { AuthState } from './types/ui'
@@ -110,188 +111,200 @@ function App() {
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100">
-      <div className="mx-auto flex min-h-screen w-full max-w-[1600px] flex-col px-4 py-6 sm:px-6 xl:px-8">
-        <DashboardHeader
-          notifications={notifications.items}
-          status={state.status}
-          theme={theme}
-          unreadNotifications={notifications.unreadCount}
-          userName={user?.name ?? 'Usuario'}
-          onClearNotifications={notifications.clear}
-          onLogout={handleLogout}
-          onMarkNotificationsRead={notifications.markAllAsRead}
-          onToggleTheme={toggleTheme}
-        />
-        <MetricGrid dashboard={state.dashboard} />
-        {permissions.canViewAlerts && metrics.alertAttentionCount > 0 && (
-          <AlertNotice
-            activeView={state.activeView}
-            count={metrics.alertAttentionCount}
-            myCount={metrics.myAlertCount}
-            unassignedFailureCount={metrics.unassignedFailureCount}
-            onOpen={() => actions.setActiveView('alerts')}
-          />
-        )}
-        {successNotice && (
-          <SuccessNotice
-            message={successNotice.message}
-            subText={successNotice.subText}
-            onClose={clearSuccess}
-          />
-        )}
+      <div className="flex min-h-screen w-full flex-col gap-6 px-4 py-6 sm:px-6 lg:flex-row xl:px-8">
         <AppNavigation
           activeView={state.activeView}
           alertAttentionCount={metrics.alertAttentionCount}
           canViewAlerts={permissions.canViewAlerts}
           canViewMaintenance={permissions.canViewMaintenance}
           canViewSettings={permissions.canViewSettings}
+          canManageUsers={permissions.canManageUsers}
           myCaseCount={metrics.myCaseCount}
+          userName={user?.name ?? 'Usuario'}
           onChangeView={actions.setActiveView}
+          onLogout={handleLogout}
         />
 
-        {state.activeView === 'inventory' && (
-          <InventoryPage
-            canAssignEquipment={permissions.canAssignEquipment}
-            canCreateEquipment={permissions.canCreateEquipment}
-            canCreateFailureReports={permissions.canCreateFailureReports}
-            canCreateMaintenance={permissions.canCreateMaintenance}
-            canDeleteEquipment={permissions.canDeleteEquipment}
-            canManageEquipmentAttachments={permissions.canManageEquipmentAttachments}
-            canManageFailureReports={permissions.canManageFailureReports}
-            canReturnEquipment={permissions.canReturnEquipment}
-            canUpdateEquipment={permissions.canUpdateEquipment}
-            catalogs={state.equipmentCatalogs}
-            equipment={state.equipment}
-            filters={state.equipmentFilters}
-            headquarters={state.headquarters}
-            lifeSheet={state.lifeSheet}
-            lifeSheetStatus={state.lifeSheetStatus}
-            pagination={state.equipmentMeta}
-            selectedEquipmentId={state.selectedEquipmentId}
-            onAssignEquipment={actions.assignEquipment}
-            onChangeFilters={actions.handleChangeEquipmentFilters}
-            onCreateEquipment={actions.openCreateEquipment}
-            onCreateFailure={actions.createFailure}
-            onCreateMaintenanceRecord={actions.createMaintenanceRecord}
-            onDeleteAttachment={actions.deleteAttachment}
-            onDeleteEquipment={(equipmentId) =>
-              requestConfirmation({
-                confirmLabel: 'Retirar equipo',
-                message: 'El equipo saldra del inventario activo. Su historial se conserva para consulta.',
-                onConfirm: () => actions.handleDeleteEquipment(equipmentId),
-                title: 'Confirmar retiro',
-              })
-            }
-            onDownloadImportTemplate={actions.handleDownloadEquipmentImportTemplate}
-            onEditEquipment={actions.openEditEquipment}
-            onExportEquipment={actions.handleExportEquipment}
-            onImportEquipment={actions.handleImportEquipment}
-            onResolveFailure={actions.resolveFailure}
-            onReturnEquipment={actions.returnEquipment}
-            onSelectEquipment={actions.handleSelectEquipment}
-            onUploadAttachment={actions.uploadAttachment}
+        <div className="flex min-w-0 flex-1 flex-col">
+          <DashboardHeader
+            notifications={notifications.items}
+            status={state.status}
+            theme={theme}
+            unreadNotifications={notifications.unreadCount}
+            onClearNotifications={notifications.clear}
+            onMarkNotificationsRead={notifications.markAllAsRead}
+            onToggleTheme={toggleTheme}
           />
-        )}
+          <MetricGrid dashboard={state.dashboard} />
+          {permissions.canViewAlerts && metrics.alertAttentionCount > 0 && (
+            <AlertNotice
+              activeView={state.activeView}
+              count={metrics.alertAttentionCount}
+              myCount={metrics.myAlertCount}
+              unassignedFailureCount={metrics.unassignedFailureCount}
+              onOpen={() => actions.setActiveView('alerts')}
+            />
+          )}
+          {successNotice && (
+            <SuccessNotice
+              message={successNotice.message}
+              subText={successNotice.subText}
+              onClose={clearSuccess}
+            />
+          )}
 
-        {state.activeView === 'maintenance' && permissions.canViewMaintenance && (
-          <MaintenancePage
-            canClose={permissions.canCloseMaintenance}
-            canCreate={permissions.canCreateMaintenance}
-            canUpdate={permissions.canUpdateMaintenance}
-            schedules={state.maintenanceSchedules}
-            status={state.maintenanceStatus}
-            onCancel={(scheduleId) =>
-              actions.handleScheduleAction(() => actions.cancelMaintenanceSchedule(scheduleId))
-            }
-            onCreateSchedule={() => actions.setIsScheduleFormOpen(true)}
-            onFinish={actions.handleFinishSchedule}
-            onMarkPending={(scheduleId) =>
-              actions.handleScheduleAction(() => actions.markMaintenancePending(scheduleId))
-            }
-            onReschedule={(scheduleId, scheduledFor) =>
-              actions.handleScheduleAction(() =>
-                actions.rescheduleMaintenanceSchedule(scheduleId, scheduledFor)
-              )
-            }
-            onStart={(scheduleId) =>
-              actions.handleScheduleAction(() => actions.startMaintenanceSchedule(scheduleId))
-            }
-          />
-        )}
+          {state.activeView === 'inventory' && (
+            <InventoryPage
+              canAssignEquipment={permissions.canAssignEquipment}
+              canCreateEquipment={permissions.canCreateEquipment}
+              canCreateFailureReports={permissions.canCreateFailureReports}
+              canCreateMaintenance={permissions.canCreateMaintenance}
+              canDeleteEquipment={permissions.canDeleteEquipment}
+              canManageEquipmentAttachments={permissions.canManageEquipmentAttachments}
+              canManageFailureReports={permissions.canManageFailureReports}
+              canReturnEquipment={permissions.canReturnEquipment}
+              canUpdateEquipment={permissions.canUpdateEquipment}
+              catalogs={state.equipmentCatalogs}
+              equipment={state.equipment}
+              filters={state.equipmentFilters}
+              headquarters={state.headquarters}
+              lifeSheet={state.lifeSheet}
+              lifeSheetStatus={state.lifeSheetStatus}
+              pagination={state.equipmentMeta}
+              selectedEquipmentId={state.selectedEquipmentId}
+              onAssignEquipment={actions.assignEquipment}
+              onChangeFilters={actions.handleChangeEquipmentFilters}
+              onCreateEquipment={actions.openCreateEquipment}
+              onCreateFailure={actions.createFailure}
+              onCreateMaintenanceRecord={actions.createMaintenanceRecord}
+              onDeleteAttachment={actions.deleteAttachment}
+              onDeleteEquipment={(equipmentId) =>
+                requestConfirmation({
+                  confirmLabel: 'Retirar equipo',
+                  message: 'El equipo saldra del inventario activo. Su historial se conserva para consulta.',
+                  onConfirm: () => actions.handleDeleteEquipment(equipmentId),
+                  title: 'Confirmar retiro',
+                })
+              }
+              onDownloadImportTemplate={actions.handleDownloadEquipmentImportTemplate}
+              onEditEquipment={actions.openEditEquipment}
+              onExportEquipment={actions.handleExportEquipment}
+              onImportEquipment={actions.handleImportEquipment}
+              onOpenEquipmentDetails={actions.openEquipmentDetails}
+              onResolveFailure={actions.resolveFailure}
+              onReturnEquipment={actions.returnEquipment}
+              onSelectEquipment={actions.handleSelectEquipment}
+              onUploadAttachment={actions.uploadAttachment}
+            />
+          )}
 
-        {state.activeView === 'settings' && permissions.canViewSettings && (
-          <SettingsPage
-            canManageHeadquarters={permissions.canManageHeadquarters}
-            canManageLocations={permissions.canManageLocations}
-            headquarters={state.headquarters}
-            locations={state.locations}
-            onCreateHeadquarter={actions.createHeadquarter}
-            onCreateLocation={actions.createLocation}
-            onDeactivateHeadquarter={(headquarterId) =>
-              requestConfirmation({
-                confirmLabel: 'Desactivar sede',
-                message: 'La sede quedara inactiva para nuevas asignaciones. Las ubicaciones y equipos existentes no se eliminan.',
-                onConfirm: () => actions.deactivateHeadquarter(headquarterId),
-                title: 'Confirmar desactivacion',
-              })
-            }
-            onDeactivateLocation={(locationId) =>
-              requestConfirmation({
-                confirmLabel: 'Desactivar ubicacion',
-                message: 'La ubicacion quedara inactiva para nuevas asignaciones. Los equipos ya asociados conservan su historial.',
-                onConfirm: () => actions.deactivateLocation(locationId),
-                title: 'Confirmar desactivacion',
-              })
-            }
-            onUpdateHeadquarter={actions.updateHeadquarter}
-            onUpdateLocation={actions.updateLocation}
-          />
-        )}
+          {state.activeView === 'maintenance' && permissions.canViewMaintenance && (
+            <MaintenancePage
+              canClose={permissions.canCloseMaintenance}
+              canCreate={permissions.canCreateMaintenance}
+              canUpdate={permissions.canUpdateMaintenance}
+              schedules={state.maintenanceSchedules}
+              status={state.maintenanceStatus}
+              onCancel={(scheduleId) =>
+                actions.handleScheduleAction(() => actions.cancelMaintenanceSchedule(scheduleId))
+              }
+              onCreateSchedule={() => actions.setIsScheduleFormOpen(true)}
+              onFinish={actions.handleFinishSchedule}
+              onMarkPending={(scheduleId) =>
+                actions.handleScheduleAction(() => actions.markMaintenancePending(scheduleId))
+              }
+              onReschedule={(scheduleId, scheduledFor) =>
+                actions.handleScheduleAction(() =>
+                  actions.rescheduleMaintenanceSchedule(scheduleId, scheduledFor)
+                )
+              }
+              onStart={(scheduleId) =>
+                actions.handleScheduleAction(() => actions.startMaintenanceSchedule(scheduleId))
+              }
+            />
+          )}
 
-        {state.activeView === 'alerts' && permissions.canViewAlerts && (
-          <AlertsPage
-            alerts={state.alerts}
-            canManage={permissions.canManageAlerts}
-            currentUserId={user?.id ?? null}
-            isRunning={state.isRunningAlerts}
-            technicians={state.equipmentCatalogs?.technicians ?? []}
-            status={state.alertsStatus}
-            onRunChecks={actions.handleRunAlertChecks}
-            onAcknowledge={(alertId) =>
-              actions.handleAlertAction(() => actions.acknowledgeAlert(alertId), 'Alerta reconocida')
-            }
-            onAssign={(alertId, assignedTo) =>
-              actions.handleAlertAction(() => actions.assignAlert(alertId, assignedTo), 'Alerta asignada')
-            }
-            onResolve={(alertId) =>
-              actions.handleAlertAction(() => actions.resolveAlert(alertId), 'Alerta resuelta')
-            }
-            onSelfAssign={(alertId) =>
-              actions.handleAlertAction(() => actions.selfAssignAlert(alertId), 'Falla tomada')
-            }
-          />
-        )}
-        {state.activeView === 'cases' && permissions.canViewAlerts && (
-          <MyCasesPage
-            alerts={state.alerts}
-            currentUserId={user?.id ?? null}
-            status={state.alertsStatus}
-            onAddNote={(alertId, note) =>
-              actions.handleAlertAction(() => actions.addAlertNote(alertId, note), 'Nota guardada')
-            }
-            onDismiss={(alertId) =>
-              actions.handleAlertAction(() => actions.dismissAlert(alertId), 'Caso quitado')
-            }
-            onResolveCase={(alert) => {
-              const action =
-                alert.entityType === 'failure_report'
-                  ? () => actions.resolveFailureReport(alert.entityId)
-                  : () => actions.resolveAlert(alert.id)
+          {state.activeView === 'settings' && permissions.canViewSettings && (
+            <SettingsPage
+              canManageHeadquarters={permissions.canManageHeadquarters}
+              canManageLocations={permissions.canManageLocations}
+              headquarters={state.headquarters}
+              locations={state.locations}
+              onCreateHeadquarter={actions.createHeadquarter}
+              onCreateLocation={actions.createLocation}
+              onDeactivateHeadquarter={(headquarterId) =>
+                requestConfirmation({
+                  confirmLabel: 'Desactivar sede',
+                  message: 'La sede quedara inactiva para nuevas asignaciones. Las ubicaciones y equipos existentes no se eliminan.',
+                  onConfirm: () => actions.deactivateHeadquarter(headquarterId),
+                  title: 'Confirmar desactivacion',
+                })
+              }
+              onDeactivateLocation={(locationId) =>
+                requestConfirmation({
+                  confirmLabel: 'Desactivar ubicacion',
+                  message: 'La ubicacion quedara inactiva para nuevas asignaciones. Los equipos ya asociados conservan su historial.',
+                  onConfirm: () => actions.deactivateLocation(locationId),
+                  title: 'Confirmar desactivacion',
+                })
+              }
+              onUpdateHeadquarter={actions.updateHeadquarter}
+              onUpdateLocation={actions.updateLocation}
+            />
+          )}
 
-              actions.handleAlertAction(action, 'Caso cerrado')
-            }}
-          />
-        )}
+          {state.activeView === 'users' && permissions.canManageUsers && (
+            <UserManagementPage currentUserId={user?.id ?? null} />
+          )}
+
+          {state.activeView === 'alerts' && permissions.canViewAlerts && (
+            <AlertsPage
+              alerts={state.alerts}
+              canManage={permissions.canManageAlerts}
+              currentUserId={user?.id ?? null}
+              isRunning={state.isRunningAlerts}
+              technicians={state.equipmentCatalogs?.technicians ?? []}
+              status={state.alertsStatus}
+              onRunChecks={actions.handleRunAlertChecks}
+              onAcknowledge={(alertId) =>
+                actions.handleAlertAction(() => actions.acknowledgeAlert(alertId), 'Alerta reconocida')
+              }
+              onAssign={(alertId, assignedTo) =>
+                actions.handleAlertAction(() => actions.assignAlert(alertId, assignedTo), 'Alerta asignada')
+              }
+              onDismiss={(alertId) =>
+                actions.handleAlertAction(() => actions.dismissAlert(alertId), 'Alerta quitada')
+              }
+              onResolve={(alertId) =>
+                actions.handleAlertAction(() => actions.resolveAlert(alertId), 'Alerta resuelta')
+              }
+              onSelfAssign={(alertId) =>
+                actions.handleAlertAction(() => actions.selfAssignAlert(alertId), 'Falla tomada')
+              }
+            />
+          )}
+          {state.activeView === 'cases' && permissions.canViewAlerts && (
+            <MyCasesPage
+              alerts={state.alerts}
+              currentUserId={user?.id ?? null}
+              status={state.alertsStatus}
+              onAddNote={(alertId, note) =>
+                actions.handleAlertAction(() => actions.addAlertNote(alertId, note), 'Nota guardada')
+              }
+              onDismiss={(alertId) =>
+                actions.handleAlertAction(() => actions.dismissAlert(alertId), 'Caso quitado')
+              }
+              onResolveCase={(alert) => {
+                const action =
+                  alert.entityType === 'failure_report'
+                    ? () => actions.resolveFailureReport(alert.entityId)
+                    : () => actions.resolveAlert(alert.id)
+
+                actions.handleAlertAction(action, 'Caso cerrado')
+              }}
+            />
+          )}
+        </div>
         <EquipmentFormModal
           catalogs={state.equipmentCatalogs}
           equipment={state.editingEquipment}

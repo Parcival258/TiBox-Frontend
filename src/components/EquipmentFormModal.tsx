@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
+import { useEscapeKey } from '../hooks/useEscapeKey'
 import type { Equipment, EquipmentCatalogs, EquipmentPayload } from '../types/inventory'
 
 type EquipmentFormModalProps = {
@@ -115,6 +116,8 @@ export function EquipmentFormModal({
 }: EquipmentFormModalProps) {
   const [form, setForm] = useState<FormState>(emptyForm)
   const [submitState, setSubmitState] = useState<'idle' | 'submitting' | 'error'>('idle')
+
+  useEscapeKey(isOpen, onClose)
 
   useEffect(() => {
     if (isOpen) {

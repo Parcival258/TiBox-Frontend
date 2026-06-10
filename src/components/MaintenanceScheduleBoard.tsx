@@ -1,5 +1,10 @@
 import { useState, type FormEvent } from 'react'
+import { useEscapeKey } from '../hooks/useEscapeKey'
 import type { FinishMaintenanceSchedulePayload, MaintenanceSchedule } from '../types/inventory'
+import {
+  ContextActionMenu,
+  type ContextMenuState,
+} from './contextActionMenu/ContextActionMenu'
 import { AppLoader } from './Loaders'
 import {
   maintenanceStatusLabel,
@@ -60,6 +65,7 @@ export function MaintenanceScheduleBoard({
   status,
 }: MaintenanceScheduleBoardProps) {
   const [scheduleToFinish, setScheduleToFinish] = useState<MaintenanceSchedule | null>(null)
+  const [contextMenu, setContextMenu] = useState<ContextMenuState>(null)
   const openSchedules = schedules.filter((schedule) =>
     ['scheduled', 'pending', 'in_progress', 'rescheduled', 'overdue'].includes(schedule.status)
   )
@@ -119,7 +125,7 @@ export function MaintenanceScheduleBoard({
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[980px] text-left text-sm">
+          <table className="w-full min-w-[860px] text-left text-sm">
             <thead className="bg-slate-950 text-slate-400">
               <tr>
                 <th className="px-4 py-3 font-medium">Fecha</th>
@@ -128,12 +134,70 @@ export function MaintenanceScheduleBoard({
                 <th className="px-4 py-3 font-medium">Estado</th>
                 <th className="px-4 py-3 font-medium">Prioridad</th>
                 <th className="px-4 py-3 font-medium">Tecnico</th>
-                <th className="px-4 py-3 font-medium">Acciones</th>
               </tr>
             </thead>
             <tbody>
               {openSchedules.map((schedule) => (
-                <tr key={schedule.id} className="border-t border-slate-800">
+                <tr
+                  key={schedule.id}
+                  className="app-click-row border-t border-slate-800"
+                  tabIndex={0}
+                  onClick={() => {
+                    if (canClose) {
+                      setScheduleToFinish(schedule)
+                    }
+                  }}
+                  onContextMenu={(event) => {
+                    event.preventDefault()
+                    if (!canUpdate && !canClose) {
+                      return
+                    }
+
+                    setContextMenu({
+                      x: event.clientX,
+                      y: event.clientY,
+                      actions: [
+                        ...(canUpdate
+                          ? [
+                              {
+                                icon: 'check' as const,
+                                label: 'Marcar pendiente',
+                                onSelect: () => onMarkPending(schedule.id),
+                              },
+                              {
+                                icon: 'play' as const,
+                                label: 'Iniciar',
+                                onSelect: () => onStart(schedule.id),
+                              },
+                              {
+                                icon: 'calendar' as const,
+                                label: 'Reprogramar',
+                                onSelect: () => askForDate(schedule.id),
+                              },
+                              {
+                                icon: 'trash' as const,
+                                label: 'Cancelar',
+                                onSelect: () => onCancel(schedule.id),
+                                separatorBefore: true,
+                                tone: 'danger' as const,
+                              },
+                            ]
+                          : []),
+                        ...(canClose
+                          ? [
+                              {
+                                icon: 'settings' as const,
+                                label: 'Finalizar',
+                                onSelect: () => setScheduleToFinish(schedule),
+                                separatorBefore: canUpdate,
+                                tone: 'success' as const,
+                              },
+                            ]
+                          : []),
+                      ],
+                    })
+                  }}
+                >
                   <td className="px-4 py-3 text-white">{formatDate(schedule.scheduledFor)}</td>
                   <td className="px-4 py-3 text-slate-300">{equipmentName(schedule)}</td>
                   <td className="px-4 py-3 text-slate-300">
@@ -148,31 +212,13 @@ export function MaintenanceScheduleBoard({
                   <td className="px-4 py-3 text-slate-300">
                     {schedule.assignedTechnician?.name ?? 'Sin asignar'}
                   </td>
-                  <td className="px-4 py-3">
-                    {canUpdate || canClose ? (
-                      <div className="flex flex-wrap gap-2">
-                        {canUpdate && (
-                          <>
-                            <ActionButton label="Pendiente" onClick={() => onMarkPending(schedule.id)} />
-                            <ActionButton label="Iniciar" onClick={() => onStart(schedule.id)} />
-                            <ActionButton label="Reprogramar" onClick={() => askForDate(schedule.id)} />
-                            <ActionButton label="Cancelar" tone="danger" onClick={() => onCancel(schedule.id)} />
-                          </>
-                        )}
-                        {canClose && (
-                          <ActionButton label="Finalizar" onClick={() => setScheduleToFinish(schedule)} />
-                        )}
-                      </div>
-                    ) : (
-                      <span className="text-xs text-slate-500">Solo lectura</span>
-                    )}
-                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       )}
+      <ContextActionMenu menu={contextMenu} onClose={() => setContextMenu(null)} />
       <FinishMaintenanceModal
         schedule={scheduleToFinish}
         onClose={() => setScheduleToFinish(null)}
@@ -211,6 +257,8 @@ function FinishMaintenanceModal({
   const [performedAt, setPerformedAt] = useState(() => new Date().toISOString().slice(0, 10))
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [hasError, setHasError] = useState(false)
+
+  useEscapeKey(Boolean(schedule), onClose)
 
   if (!schedule) {
     return null
@@ -374,30 +422,5 @@ function StatusBadge({ value }: { value: string }) {
     <span className="inline-flex rounded-md border border-cyan-800 bg-cyan-950/40 px-2 py-1 text-xs font-medium text-cyan-200">
       {value}
     </span>
-  )
-}
-
-function ActionButton({
-  label,
-  onClick,
-  tone = 'default',
-}: {
-  label: string
-  onClick: () => void
-  tone?: 'default' | 'danger'
-}) {
-  const toneClass =
-    tone === 'danger'
-      ? 'border-red-800 text-red-200 hover:border-red-500 hover:text-white'
-      : 'border-slate-700 text-slate-300 hover:border-cyan-500 hover:text-white'
-
-  return (
-    <button
-      className={`rounded-md border px-2.5 py-1 text-xs font-medium transition ${toneClass}`}
-      type="button"
-      onClick={onClick}
-    >
-      {label}
-    </button>
   )
 }

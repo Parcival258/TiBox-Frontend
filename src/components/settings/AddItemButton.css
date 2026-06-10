@@ -1,0 +1,133 @@
+.add-item-button {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  overflow: hidden;
+  border: 1px solid #dbe3ef;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #0f172a;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 600;
+  transition:
+    width 0.2s ease-in-out,
+    border-color 0.2s ease-in-out,
+    background-color 0.2s ease-in-out;
+}
+
+.add-item-button:hover {
+  width: 112px;
+}
+
+.add-item-button::before,
+.add-item-button::after {
+  content: "";
+  position: absolute;
+  top: calc(50% - 2px);
+  width: 10px;
+  height: 4px;
+  background: #10b981;
+  transition:
+    width 0.2s ease-in-out,
+    border-radius 0.2s ease-in-out;
+}
+
+.add-item-button::before {
+  left: 11px;
+  border-top-left-radius: 2px;
+  border-bottom-left-radius: 2px;
+}
+
+.add-item-button::after {
+  right: 11px;
+  border-top-right-radius: 2px;
+  border-bottom-right-radius: 2px;
+}
+
+.add-item-button:hover::before,
+.add-item-button:hover::after {
+  width: 4px;
+  border-radius: 2px;
+}
+
+.add-item-button__icon::before,
+.add-item-button__icon::after {
+  content: "";
+  position: absolute;
+  top: calc(50% - 8px);
+  width: 2px;
+  height: 16px;
+  overflow: hidden;
+  background: #10b981;
+  transition: all 0.2s ease-in-out;
+}
+
+.add-item-button__icon::before {
+  left: 19px;
+  border-top-left-radius: 2px;
+  border-bottom-left-radius: 2px;
+}
+
+.add-item-button__icon::after {
+  right: 19px;
+  border-top-right-radius: 2px;
+  border-bottom-right-radius: 2px;
+}
+
+.add-item-button:hover .add-item-button__icon::before {
+  top: calc(50% - 2px);
+  left: 12px;
+  height: 4px;
+}
+
+.add-item-button:hover .add-item-button__icon::after {
+  top: calc(50% - 2px);
+  right: 12px;
+  height: 4px;
+}
+
+.add-item-button__text {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 0 28px;
+  overflow: hidden;
+  opacity: 0;
+  color: currentColor;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: opacity 0.2s;
+}
+
+.add-item-button:hover .add-item-button__text {
+  opacity: 1;
+}
+
+.add-item-button:focus-visible {
+  outline: 2px solid #22d3ee;
+  outline-offset: 3px;
+}
+
+html[data-theme='dark'] .add-item-button {
+  border-color: #334155;
+  background: #020617;
+  color: #f8fafc;
+}
+
+html[data-theme='dark'] .add-item-button:hover {
+  border-color: #10b981;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .add-item-button,
+  .add-item-button::before,
+  .add-item-button::after,
+  .add-item-button__icon::before,
+  .add-item-button__icon::after,
+  .add-item-button__text {
+    transition: none;
+  }
+}

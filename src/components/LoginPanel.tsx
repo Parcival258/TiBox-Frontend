@@ -30,7 +30,7 @@ export function LoginPanel({ isSubmitting, error, onSubmit }: LoginPanelProps) {
         onSubmit={handleSubmit}
       >
         <p className="text-sm font-medium uppercase tracking-wide text-cyan-300">
-          Inventario TI
+          TIBOX
         </p>
         <h1 className="mt-2 text-2xl font-semibold text-white">Iniciar sesión</h1>
 

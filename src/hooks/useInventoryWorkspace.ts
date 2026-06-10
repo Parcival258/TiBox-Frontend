@@ -126,6 +126,7 @@ export function useInventoryWorkspace({
     canViewMaintenance: can(user, 'maintenance.view'),
     canManageHeadquarters: can(user, 'settings.headquarters.manage'),
     canManageLocations: can(user, 'settings.locations.manage'),
+    canManageUsers: user?.role?.slug === 'admin' && can(user, 'users.update'),
     canViewSettings: can(user, 'settings.headquarters.view') || can(user, 'settings.locations.view'),
   }
 
@@ -185,7 +186,7 @@ export function useInventoryWorkspace({
 
   function handleSelectEquipment(equipmentId: string) {
     if (equipmentId === selectedEquipmentId) {
-      if (lifeSheetStatus === 'error') {
+      if (lifeSheetStatus === 'error' || lifeSheetStatus === 'idle') {
         refreshSelectedLifeSheet(equipmentId)
       }
 
@@ -195,6 +196,22 @@ export function useInventoryWorkspace({
     setSelectedEquipmentId(equipmentId)
     setLifeSheet(null)
     setLifeSheetStatus('loading')
+  }
+
+  function openEquipmentDetails(equipmentId: string) {
+    setSelectedEquipmentId(equipmentId)
+    setLifeSheet(null)
+    setLifeSheetStatus('loading')
+
+    return getEquipmentLifeSheet(equipmentId)
+      .then((response) => {
+        setLifeSheet(response)
+        setLifeSheetStatus('ready')
+      })
+      .catch(() => {
+        setLifeSheet(null)
+        setLifeSheetStatus('error')
+      })
   }
 
   function openCreateEquipment() {
@@ -525,6 +542,7 @@ export function useInventoryWorkspace({
       handleSubmitEquipment,
       markMaintenancePending,
       openCreateEquipment,
+      openEquipmentDetails,
       openEditEquipment,
       resetWorkspace,
       rescheduleMaintenanceSchedule,

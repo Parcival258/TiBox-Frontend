@@ -1,4 +1,5 @@
 import { useEffect, useId, useMemo, useState, type FormEvent, type ReactNode } from 'react'
+import { useEscapeKey } from '../hooks/useEscapeKey'
 import type {
   CreateMaintenanceSchedulePayload,
   Equipment,
@@ -86,6 +87,8 @@ export function MaintenanceScheduleFormModal({
 }: MaintenanceScheduleFormModalProps) {
   const [form, setForm] = useState<FormState>(emptyForm)
   const [submitState, setSubmitState] = useState<'idle' | 'submitting' | 'error'>('idle')
+
+  useEscapeKey(isOpen, onClose)
 
   useEffect(() => {
     if (isOpen) {

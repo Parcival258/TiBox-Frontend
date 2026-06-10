@@ -1,3 +1,8 @@
+import { useState } from 'react'
+import {
+  ContextActionMenu,
+  type ContextMenuState,
+} from './contextActionMenu/ContextActionMenu'
 import type { Alert, Responsible } from '../types/inventory'
 import { AppLoader } from './Loaders'
 
@@ -10,6 +15,7 @@ type AlertCenterProps = {
   status: 'loading' | 'ready' | 'error'
   onAcknowledge: (alertId: string) => void
   onAssign: (alertId: string, assignedTo: string) => void
+  onDismiss: (alertId: string) => void
   onResolve: (alertId: string) => void
   onRunChecks: () => void
   onSelfAssign: (alertId: string) => void
@@ -34,15 +40,17 @@ export function AlertCenter({
   isRunning,
   onAcknowledge,
   onAssign,
+  onDismiss,
   onResolve,
   onRunChecks,
   onSelfAssign,
   technicians,
   status,
 }: AlertCenterProps) {
+  const [contextMenu, setContextMenu] = useState<ContextMenuState>(null)
   const visibleAlerts = alerts.filter((alert) => alert.status !== 'dismissed')
   const openAlerts = visibleAlerts.filter((alert) => alert.status !== 'resolved')
-  const criticalAlerts = alerts.filter((alert) => alert.severity === 'critical')
+  const criticalAlerts = openAlerts.filter((alert) => alert.severity === 'critical')
 
   return (
     <section className="rounded-lg border border-slate-800 bg-slate-900">
@@ -80,7 +88,63 @@ export function AlertCenter({
       ) : (
         <div className="divide-y divide-slate-800">
             {visibleAlerts.map((alert) => (
-              <article key={alert.id} className="grid gap-4 px-4 py-4 lg:grid-cols-[1fr_260px]">
+              <article
+                key={alert.id}
+                className="app-context-row grid gap-4 px-4 py-4 lg:grid-cols-[1fr_220px]"
+                tabIndex={0}
+                onContextMenu={(event) => {
+                  event.preventDefault()
+                  const actions = [
+                    ...(isFailureAlert(alert) && alert.status !== 'resolved' && alert.assignedTo !== currentUserId
+                      ? [
+                          {
+                            icon: 'userPlus' as const,
+                            label: 'Tomar falla',
+                            onSelect: () => onSelfAssign(alert.id),
+                          },
+                        ]
+                      : []),
+                    ...(canManage
+                      ? [
+                          {
+                            disabled: alert.status !== 'open',
+                            icon: 'eye' as const,
+                            label: 'Reconocer',
+                            onSelect: () => onAcknowledge(alert.id),
+                          },
+                          {
+                            disabled: alert.status === 'resolved',
+                            icon: 'check' as const,
+                            label: 'Resolver',
+                            onSelect: () => onResolve(alert.id),
+                            tone: 'success' as const,
+                          },
+                          ...(alert.status === 'resolved'
+                            ? [
+                                {
+                                  icon: 'trash' as const,
+                                  label: 'Quitar de la lista',
+                                  onSelect: () => onDismiss(alert.id),
+                                  separatorBefore: true,
+                                  tone: 'muted' as const,
+                                },
+                              ]
+                            : []),
+                        ]
+                      : []),
+                  ]
+
+                  if (actions.length === 0) {
+                    return
+                  }
+
+                  setContextMenu({
+                    x: event.clientX,
+                    y: event.clientY,
+                    actions,
+                  })
+                }}
+              >
               <div>
                 <div className="flex flex-wrap items-center gap-2">
                   <SeverityBadge severity={alert.severity} label={alert.severityLabel} />
@@ -98,12 +162,6 @@ export function AlertCenter({
                 </p>
               </div>
               <div className="flex flex-wrap items-start gap-2 lg:justify-end">
-                {isFailureAlert(alert) && alert.status !== 'resolved' && alert.assignedTo !== currentUserId && (
-                  <ActionButton
-                    label="Tomar falla"
-                    onClick={() => onSelfAssign(alert.id)}
-                  />
-                )}
                 {canManage && isFailureAlert(alert) && alert.status !== 'resolved' && (
                   <AssignSelect
                     alertId={alert.id}
@@ -112,24 +170,10 @@ export function AlertCenter({
                     onAssign={onAssign}
                   />
                 )}
-                {canManage && (
-                  <>
-                    <ActionButton
-                      label="Reconocer"
-                      disabled={alert.status !== 'open'}
-                      onClick={() => onAcknowledge(alert.id)}
-                    />
-                  <ActionButton
-                    label="Resolver"
-                    tone="success"
-                    disabled={alert.status === 'resolved'}
-                    onClick={() => onResolve(alert.id)}
-                  />
-                  </>
-                )}
               </div>
               </article>
             ))}
+            <ContextActionMenu menu={contextMenu} onClose={() => setContextMenu(null)} />
           </div>
       )}
     </section>
@@ -182,33 +226,5 @@ function AssignSelect({
         ))}
       </select>
     </label>
-  )
-}
-
-function ActionButton({
-  disabled,
-  label,
-  onClick,
-  tone = 'default',
-}: {
-  disabled?: boolean
-  label: string
-  onClick: () => void
-  tone?: 'default' | 'success'
-}) {
-  const toneClass =
-    tone === 'success'
-      ? 'border-emerald-800 text-emerald-200 hover:border-emerald-500'
-      : 'border-slate-700 text-slate-300 hover:border-cyan-500'
-
-  return (
-    <button
-      className={`rounded-md border px-3 py-1.5 text-xs font-medium transition hover:text-white disabled:cursor-not-allowed disabled:opacity-50 ${toneClass}`}
-      type="button"
-      disabled={disabled}
-      onClick={onClick}
-    >
-      {label}
-    </button>
   )
 }

@@ -1,3 +1,5 @@
+import { useEscapeKey } from '../hooks/useEscapeKey'
+
 type ConfirmDialogProps = {
   confirmLabel?: string
   isOpen: boolean
@@ -15,6 +17,8 @@ export function ConfirmDialog({
   onConfirm,
   title,
 }: ConfirmDialogProps) {
+  useEscapeKey(isOpen, onCancel)
+
   if (!isOpen) {
     return null
   }
