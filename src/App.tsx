@@ -15,6 +15,7 @@ import { useSuccessNotice } from './hooks/useSuccessNotice'
 import { useThemeMode } from './hooks/useThemeMode'
 import { AlertsPage } from './pages/AlertsPage'
 import { InventoryPage } from './pages/InventoryPage'
+import { EquipmentLoansPage } from './pages/EquipmentLoansPage'
 import { MaintenancePage } from './pages/MaintenancePage'
 import { MyCasesPage } from './pages/MyCasesPage'
 import { SettingsPage } from './pages/SettingsPage'
@@ -195,6 +196,19 @@ function App() {
               onReturnEquipment={actions.returnEquipment}
               onSelectEquipment={actions.handleSelectEquipment}
               onUploadAttachment={actions.uploadAttachment}
+            />
+          )}
+
+          {state.activeView === 'loans' && permissions.canViewEquipmentLoans && (
+            <EquipmentLoansPage
+              canCreate={permissions.canAssignEquipment}
+              canReturn={permissions.canReturnEquipment}
+              catalogs={state.equipmentCatalogs}
+              equipment={state.equipment}
+              loans={state.equipmentLoans}
+              status={state.equipmentLoansStatus}
+              onCreateLoan={actions.createEquipmentLoan}
+              onReturnLoan={actions.returnEquipmentLoan}
             />
           )}
 

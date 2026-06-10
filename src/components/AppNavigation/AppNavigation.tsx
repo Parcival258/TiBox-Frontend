@@ -22,6 +22,7 @@ type IconName =
   | 'calendar'
   | 'cases'
   | 'inventory'
+  | 'loans'
   | 'logout'
   | 'panelClose'
   | 'panelOpen'
@@ -69,6 +70,13 @@ export function AppNavigation({
               isCollapsed={isCollapsed}
               label="Inventario"
               onClick={() => onChangeView('inventory')}
+            />
+            <NavButton
+              active={activeView === 'loans'}
+              icon="loans"
+              isCollapsed={isCollapsed}
+              label="Prestamos"
+              onClick={() => onChangeView('loans')}
             />
             {canViewMaintenance && (
               <NavButton
@@ -228,6 +236,18 @@ function Icon({ name }: { name: IconName }) {
         <rect height="16" rx="2" width="16" x="4" y="5" />
         <path d="M9 14h3l-1.5 3" />
         <path d="M15 14h.01" />
+      </svg>
+    )
+  }
+
+  if (name === 'loans') {
+    return (
+      <svg {...commonProps}>
+        <path d="M8 7h8" />
+        <path d="M8 11h8" />
+        <path d="M8 15h5" />
+        <rect height="16" rx="2" width="14" x="5" y="4" />
+        <path d="m15 17 2 2 4-4" />
       </svg>
     )
   }

@@ -131,6 +131,53 @@ export type EquipmentAssignment = {
   notes: string | null
 }
 
+export type EquipmentLoanStatus = 'active' | 'returned' | 'overdue' | 'cancelled'
+
+export type EquipmentLoan = {
+  id: string
+  borrowerLabel: string
+  borrowerName: string | null
+  equipment: {
+    id: string
+    internalCode: string
+    type: string
+    brand: string | null
+    model: string | null
+  }
+  estimatedReturnAt: string
+  loanedAt: string
+  notes: string | null
+  receivedSignatureImage: string | null
+  requestedAt: string
+  requestedItem: string
+  requestMode: string | null
+  returnedAt: string | null
+  signatureImage: string | null
+  status: EquipmentLoanStatus
+  statusLabel: string
+  user: Responsible | null
+}
+
+export type CreateEquipmentLoanPayload = {
+  borrowerName?: string
+  equipmentId: string
+  estimatedReturnAt: string
+  loanedAt?: string
+  notes?: string
+  receivedSignatureImage?: string
+  requestedAt?: string
+  requestedItem: string
+  requestMode?: string
+  signatureImage?: string
+  userId?: string
+}
+
+export type ReturnEquipmentLoanPayload = {
+  notes?: string
+  receivedSignatureImage?: string
+  returnedAt?: string
+}
+
 export type MaintenanceSchedule = {
   id: string
   maintenanceType: string
@@ -316,6 +363,7 @@ export type TechnicalHistoryItem = {
     | 'maintenance_schedule'
     | 'failure_report'
     | 'equipment_assignment'
+    | 'equipment_loan'
   date: string
   title: string
   detail: string | null
@@ -326,6 +374,7 @@ export type TechnicalHistoryItem = {
 export type EquipmentLifeSheet = {
   equipment: Equipment
   assignments: EquipmentAssignment[]
+  loans: EquipmentLoan[]
   maintenanceSchedules: MaintenanceSchedule[]
   maintenanceRecords: MaintenanceRecord[]
   failureReports: FailureReport[]
@@ -335,6 +384,7 @@ export type EquipmentLifeSheet = {
   technicalHistory: TechnicalHistoryItem[]
   summary: {
     totalAssignments: number
+    totalLoans: number
     totalMaintenanceRecords: number
     openFailureReports: number
     totalAttachments: number

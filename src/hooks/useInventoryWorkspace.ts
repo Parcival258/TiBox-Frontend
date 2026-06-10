@@ -9,6 +9,7 @@ import {
   assignAlert,
   assignEquipment,
   cancelMaintenanceSchedule,
+  createEquipmentLoan,
   createEquipment,
   createFailureReport,
   createHeadquarter,
@@ -26,6 +27,7 @@ import {
   getEquipment,
   getEquipmentCatalogs,
   getEquipmentLifeSheet,
+  getEquipmentLoans,
   getHeadquarters,
   getLocations,
   getMaintenanceScheduleCatalogs,
@@ -34,6 +36,7 @@ import {
   rescheduleMaintenanceSchedule,
   resolveAlert,
   resolveFailureReport,
+  returnEquipmentLoan,
   returnEquipment,
   runAlertChecks,
   selfAssignAlert,
@@ -45,12 +48,14 @@ import {
 } from '../services/inventory'
 import type {
   Alert,
+  CreateEquipmentLoanPayload,
   CreateMaintenanceSchedulePayload,
   DashboardSummary,
   Equipment,
   EquipmentCatalogs,
   EquipmentFilters,
   EquipmentLifeSheet as EquipmentLifeSheetType,
+  EquipmentLoan,
   EquipmentPayload,
   FinishMaintenanceSchedulePayload,
   Headquarter,
@@ -60,6 +65,7 @@ import type {
   MaintenanceSchedule,
   MaintenanceScheduleCatalogs,
   PaginationMeta,
+  ReturnEquipmentLoanPayload,
   User,
 } from '../types/inventory'
 import type { ActiveView, AuthState, LifeSheetState, LoadState, ModuleState } from '../types/ui'
@@ -99,6 +105,8 @@ export function useInventoryWorkspace({
   const [maintenanceCatalogs, setMaintenanceCatalogs] =
     useState<MaintenanceScheduleCatalogs | null>(null)
   const [maintenanceStatus, setMaintenanceStatus] = useState<ModuleState>('loading')
+  const [equipmentLoans, setEquipmentLoans] = useState<EquipmentLoan[]>([])
+  const [equipmentLoansStatus, setEquipmentLoansStatus] = useState<ModuleState>('loading')
   const [alerts, setAlerts] = useState<Alert[]>([])
   const [alertsStatus, setAlertsStatus] = useState<ModuleState>('loading')
   const [isRunningAlerts, setIsRunningAlerts] = useState(false)
@@ -121,6 +129,7 @@ export function useInventoryWorkspace({
     canViewFailureReports: can(user, 'failure_reports.view'),
     canReturnEquipment: can(user, 'equipment.return'),
     canUpdateEquipment: can(user, 'equipment.update'),
+    canViewEquipmentLoans: can(user, 'equipment.view'),
     canUpdateMaintenance: can(user, 'maintenance.update'),
     canViewAlerts: can(user, 'alerts.view'),
     canViewMaintenance: can(user, 'maintenance.view'),
@@ -151,6 +160,7 @@ export function useInventoryWorkspace({
       .catch(() => setStatus('error'))
 
     refreshAuxiliaryData()
+    refreshEquipmentLoans()
     if (permissions.canViewMaintenance) {
       refreshMaintenanceSchedules()
       getMaintenanceScheduleCatalogs().then(setMaintenanceCatalogs).catch(() => undefined)
@@ -334,6 +344,7 @@ export function useInventoryWorkspace({
   async function refreshOperationalData() {
     const tasks: Array<Promise<unknown>> = [
       refreshCoreData(),
+      refreshEquipmentLoans(),
       refreshSelectedLifeSheet(),
     ]
 
@@ -362,6 +373,16 @@ export function useInventoryWorkspace({
         setMaintenanceStatus('ready')
       })
       .catch(() => setMaintenanceStatus('error'))
+  }
+
+  function refreshEquipmentLoans() {
+    setEquipmentLoansStatus('loading')
+    return getEquipmentLoans()
+      .then((response) => {
+        setEquipmentLoans(response)
+        setEquipmentLoansStatus('ready')
+      })
+      .catch(() => setEquipmentLoansStatus('error'))
   }
 
   function refreshAlerts() {
@@ -489,6 +510,7 @@ export function useInventoryWorkspace({
     setEquipmentFilters(defaultEquipmentFilters)
     setEquipmentMeta(null)
     setMaintenanceSchedules([])
+    setEquipmentLoans([])
     setMaintenanceCatalogs(null)
     setAlerts([])
     setEditingEquipment(null)
@@ -500,6 +522,7 @@ export function useInventoryWorkspace({
     setHeadquarters([])
     setLocations([])
     setMaintenanceStatus('loading')
+    setEquipmentLoansStatus('loading')
     setAlertsStatus('loading')
     setActiveView('inventory')
     setStatus('loading')
@@ -582,6 +605,11 @@ export function useInventoryWorkspace({
         await assignEquipment(selectedEquipmentId, userId, notes)
         await refreshOperationalData()
       },
+      createEquipmentLoan: async (payload: CreateEquipmentLoanPayload) => {
+        await createEquipmentLoan(payload)
+        showSuccess('Prestamo registrado', 'El seguimiento quedo activo hasta la devolucion.')
+        await refreshOperationalData()
+      },
       createFailure: async (payload: { title: string; description: string; priority: string }) => {
         if (!selectedEquipmentId) return
         await createFailureReport({
@@ -626,6 +654,11 @@ export function useInventoryWorkspace({
         await returnEquipment(selectedEquipmentId, notes)
         await refreshOperationalData()
       },
+      returnEquipmentLoan: async (loanId: string, payload: ReturnEquipmentLoanPayload) => {
+        await returnEquipmentLoan(loanId, payload)
+        showSuccess('Devolucion registrada', 'El prestamo quedo cerrado correctamente.')
+        await refreshOperationalData()
+      },
       uploadAttachment: async (file: File) => {
         if (!selectedEquipmentId) return
         await uploadEquipmentAttachment(selectedEquipmentId, file)
@@ -662,6 +695,8 @@ export function useInventoryWorkspace({
       equipmentCatalogs,
       equipmentFilters,
       equipmentFormMode,
+      equipmentLoans,
+      equipmentLoansStatus,
       equipmentMeta,
       headquarters,
       locations,

@@ -113,6 +113,7 @@ export function EquipmentLifeSheet({
         <Metric label="Mantenimientos" value={summary.totalMaintenanceRecords} />
         <Metric label="Fallas abiertas" value={summary.openFailureReports} />
         <Metric label="Asignaciones" value={summary.totalAssignments} />
+        <Metric label="Prestamos" value={summary.totalLoans} />
         <Metric label="Adjuntos" value={summary.totalAttachments} />
       </div>
 
@@ -215,6 +216,19 @@ export function EquipmentLifeSheet({
             : 'Asignacion activa',
         }))}
       />
+
+      <Timeline
+        title="Prestamos"
+        emptyText="Sin prestamos registrados."
+        items={lifeSheet.loans.map((loan) => ({
+          id: loan.id,
+          title: `${loan.borrowerLabel} / ${loan.statusLabel}`,
+          date: formatDate(loan.loanedAt),
+          detail: loan.returnedAt
+            ? `Devuelto: ${formatDate(loan.returnedAt)}`
+            : `Devolucion estimada: ${formatDate(loan.estimatedReturnAt)}`,
+        }))}
+      />
     </aside>
   )
 }
@@ -301,6 +315,7 @@ function Info({ label, value }: { label: string; value: string }) {
 function technicalHistoryTypeLabel(item: TechnicalHistoryItem) {
   const labels: Record<TechnicalHistoryItem['type'], string> = {
     equipment_assignment: 'Asignacion',
+    equipment_loan: 'Prestamo',
     failure_report: 'Falla',
     maintenance_record: 'Mantenimiento',
     maintenance_schedule: 'Programacion',
@@ -316,6 +331,13 @@ function technicalHistoryStatusLabel(item: TechnicalHistoryItem) {
 
   if (item.type === 'equipment_assignment') {
     return item.status === 'returned' ? 'Devuelto' : 'Activo'
+  }
+
+  if (item.type === 'equipment_loan') {
+    if (item.status === 'returned') return 'Devuelto'
+    if (item.status === 'overdue') return 'Vencido'
+
+    return 'Activo'
   }
 
   return maintenanceStatusLabel(item.status)

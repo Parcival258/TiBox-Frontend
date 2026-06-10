@@ -4,6 +4,7 @@ import type {
   AlertCatalogs,
   AlertRunResult,
   CreateFailureReportPayload,
+  CreateEquipmentLoanPayload,
   CreateMaintenanceSchedulePayload,
   CreateMaintenanceRecordPayload,
   DashboardSummary,
@@ -13,6 +14,7 @@ import type {
   EquipmentCatalogs,
   EquipmentFilters,
   EquipmentLifeSheet,
+  EquipmentLoan,
   EquipmentPayload,
   FailureReport,
   Headquarter,
@@ -23,6 +25,7 @@ import type {
   MaintenanceSchedule,
   MaintenanceScheduleCatalogs,
   PaginatedResponse,
+  ReturnEquipmentLoanPayload,
 } from '../types/inventory'
 
 export function getDashboard() {
@@ -78,6 +81,20 @@ export function returnEquipment(equipmentId: string, notes?: string) {
   return patchJson<EquipmentAssignment>(`/api/v1/equipment/${equipmentId}/assignments/current/return`, {
     notes,
   })
+}
+
+export async function getEquipmentLoans() {
+  const response = await getJson<PaginatedResponse<EquipmentLoan>>('/api/v1/equipment-loans?perPage=50')
+
+  return response.data
+}
+
+export function createEquipmentLoan(payload: CreateEquipmentLoanPayload) {
+  return postJson<EquipmentLoan>('/api/v1/equipment-loans', payload)
+}
+
+export function returnEquipmentLoan(loanId: string, payload: ReturnEquipmentLoanPayload) {
+  return patchJson<EquipmentLoan>(`/api/v1/equipment-loans/${loanId}/return`, payload)
 }
 
 export function createFailureReport(payload: CreateFailureReportPayload) {
