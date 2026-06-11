@@ -16,7 +16,7 @@
   --rail-hover: #1e293b;
   --rail-active-bg: #22d3ee;
   --rail-active-text: #020617;
-  --rail-badge-bg: #f59e0b;
+  --rail-badge-bg: #ff5f5f;
   --rail-badge-text: #020617;
   --rail-badge-border: #0f172a;
   display: flex;
@@ -192,6 +192,7 @@
 
 .cir-rail__icon,
 .cir-rail__avatar {
+  position: relative;
   display: inline-grid;
   width: 44px;
   height: 44px;
@@ -226,13 +227,53 @@
 }
 
 .cir-rail__item--active {
-  background: var(--rail-active-bg);
+  background: transparent;
   color: var(--rail-active-text);
 }
 
 .cir-rail__item--active:hover {
-  background: var(--rail-active-bg);
+  background: transparent;
   color: var(--rail-active-text);
+}
+
+.cir-rail__active-indicator {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--rail-active-bg);
+  opacity: 0;
+  transform: scale(0.94);
+  transition:
+    opacity 180ms ease,
+    transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.cir-rail__item--active .cir-rail__active-indicator {
+  view-transition-name: cir-rail-active-indicator;
+  opacity: 1;
+  transform: scale(1);
+}
+
+.cir-rail__icon,
+.cir-rail__label {
+  z-index: 1;
+}
+
+::view-transition-group(cir-rail-active-indicator) {
+  animation-duration: 300ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+::view-transition-old(cir-rail-active-indicator),
+::view-transition-new(cir-rail-active-indicator) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
 }
 
 .cir-rail__item--settings:hover .cir-rail__icon svg,
@@ -369,25 +410,29 @@
 }
 
 .cir-rail__badge {
-  min-width: 18px;
-  height: 18px;
+  position: absolute;
+  top: 1px;
+  right: 0;
+  min-width: 17px;
+  height: 17px;
   display: inline-grid;
   place-items: center;
-  padding: 0 5px;
+  padding: 0 4px;
   border: 2px solid var(--rail-badge-border);
   border-radius: 999px;
   background: var(--rail-badge-bg);
   color: var(--rail-badge-text);
-  font-size: 10px;
+  box-shadow: 0 2px 5px rgb(2 6 23 / 0.3);
+  font-size: 9px;
   font-variant-numeric: tabular-nums;
-  font-weight: 700;
+  font-weight: 800;
   line-height: 1;
+  pointer-events: none;
 }
 
 .cir-rail--collapsed .cir-rail__badge {
-  position: absolute;
-  top: 1px;
-  right: -4px;
+  top: 0;
+  right: -2px;
 }
 
 .cir-rail__footer {
@@ -449,7 +494,7 @@ html[data-theme='light'] .cir-rail {
   --rail-hover: #f3f6fa;
   --rail-active-bg: #0e1116;
   --rail-active-text: #ffffff;
-  --rail-badge-bg: #ff7a3d;
+  --rail-badge-bg: #ff3d3d;
   --rail-badge-text: #ffffff;
   --rail-badge-border: #ffffff;
   box-shadow:
@@ -517,5 +562,9 @@ html[data-theme='light'] .cir-rail__avatar {
   .cir-rail__logout:hover svg,
   .cir-rail__logout:focus-visible svg {
     animation: none;
+  }
+
+  .cir-rail__active-indicator {
+    transition: none;
   }
 }

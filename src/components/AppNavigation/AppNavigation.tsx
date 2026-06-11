@@ -16,6 +16,9 @@ type AppNavigationProps = {
 }
 
 type SidebarState = 'expanded' | 'collapsed'
+type ViewTransitionDocument = Document & {
+  startViewTransition?: (update: () => void) => void
+}
 type IconName =
   | 'alerts'
   | 'building'
@@ -45,6 +48,22 @@ export function AppNavigation({
   const [sidebarState, setSidebarState] = useState<SidebarState>('expanded')
   const isCollapsed = sidebarState === 'collapsed'
 
+  function changeView(view: ActiveView) {
+    if (view === activeView) {
+      return
+    }
+
+    const viewTransitionDocument = document as ViewTransitionDocument
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+    if (viewTransitionDocument.startViewTransition && !reduceMotion) {
+      viewTransitionDocument.startViewTransition(() => onChangeView(view))
+      return
+    }
+
+    onChangeView(view)
+  }
+
   return (
     <aside className={isCollapsed ? 'app-sidebar app-sidebar--collapsed' : 'app-sidebar'}>
       <div className={isCollapsed ? 'cir-rail cir-rail--collapsed' : 'cir-rail'}>
@@ -70,14 +89,14 @@ export function AppNavigation({
               icon="inventory"
               isCollapsed={isCollapsed}
               label="Inventario"
-              onClick={() => onChangeView('inventory')}
+              onClick={() => changeView('inventory')}
             />
             <NavButton
               active={activeView === 'loans'}
               icon="loans"
               isCollapsed={isCollapsed}
               label="Prestamos"
-              onClick={() => onChangeView('loans')}
+              onClick={() => changeView('loans')}
             />
             {canViewMaintenance && (
               <NavButton
@@ -85,7 +104,7 @@ export function AppNavigation({
                 icon="calendar"
                 isCollapsed={isCollapsed}
                 label="Cronograma"
-                onClick={() => onChangeView('maintenance')}
+                onClick={() => changeView('maintenance')}
               />
             )}
           </NavGroup>
@@ -98,7 +117,7 @@ export function AppNavigation({
                 icon="cases"
                 isCollapsed={isCollapsed}
                 label="Mis casos"
-                onClick={() => onChangeView('cases')}
+                onClick={() => changeView('cases')}
               />
               <NavButton
                 active={activeView === 'alerts'}
@@ -106,7 +125,7 @@ export function AppNavigation({
                 icon="alerts"
                 isCollapsed={isCollapsed}
                 label="Alertas"
-                onClick={() => onChangeView('alerts')}
+                onClick={() => changeView('alerts')}
               />
             </NavGroup>
           )}
@@ -118,7 +137,7 @@ export function AppNavigation({
                   icon="users"
                   isCollapsed={isCollapsed}
                   label="Usuarios"
-                  onClick={() => onChangeView('users')}
+                  onClick={() => changeView('users')}
                 />
               )}
               {canViewSettings && (
@@ -127,7 +146,7 @@ export function AppNavigation({
                   icon="building"
                   isCollapsed={isCollapsed}
                   label="Sedes y Tipos"
-                  onClick={() => onChangeView('headquarters')}
+                  onClick={() => changeView('headquarters')}
                 />
               )}
               <NavButton
@@ -135,7 +154,7 @@ export function AppNavigation({
                 icon="settings"
                 isCollapsed={isCollapsed}
                 label="Configuracion"
-                onClick={() => onChangeView('settings')}
+                onClick={() => changeView('settings')}
               />
           </NavGroup>
         </nav>
@@ -206,11 +225,15 @@ function NavButton({
       type="button"
       onClick={onClick}
     >
+      <span className="cir-rail__active-indicator" aria-hidden="true" />
       <span className="cir-rail__icon" aria-hidden="true">
         <Icon name={icon} />
+        {badge ? (
+          <span className="cir-rail__badge">{badge > 9 ? '9+' : badge}</span>
+        ) : null}
       </span>
       <span className={isCollapsed ? 'sr-only' : 'cir-rail__label'}>{label}</span>
-      {badge ? <span className="cir-rail__badge">{badge}</span> : null}
+      {badge ? <span className="sr-only">, {badge} pendientes</span> : null}
     </button>
   )
 }

@@ -1,4 +1,5 @@
 import type { EquipmentCatalogs, EquipmentPayload } from '../types/inventory'
+import { equipmentStatusLabel, ownershipTypeLabel } from './enumLabels'
 import * as XLSX from 'xlsx'
 
 export type EquipmentImportResult = {
@@ -254,15 +255,26 @@ function downloadBlob(fileName: string, content: BlobPart, type: string) {
 
 function createTemplateWorkbook(catalogs: EquipmentCatalogs | null) {
   const listValues = {
-    brands: catalogs?.brands ?? [],
-    headquarters: catalogs?.headquarters.map((item) => item.name) ?? [],
-    locations: catalogs?.locations.map((item) =>
+    brands: uniqueValues(catalogs?.brands ?? []),
+    headquarters: uniqueValues(catalogs?.headquarters.map((item) => item.name) ?? []),
+    locations: uniqueValues(catalogs?.locations.map((item) =>
       [item.area, item.office, item.floor].filter(Boolean).join(' / ')
-    ) ?? [],
-    ownershipTypes: ['Propio', 'Arrendado'],
-    responsibles: catalogs?.responsibles.map((item) => item.name) ?? [],
-    statuses: ['Activo', 'Inactivo', 'En mantenimiento', 'Danado', 'Retirado', 'Perdido'],
-    types: catalogs?.types ?? [],
+    ) ?? []),
+    ownershipTypes: uniqueValues(
+      (catalogs?.ownershipTypes ?? ['owned', 'leased']).map(ownershipTypeLabel)
+    ),
+    responsibles: uniqueValues(catalogs?.responsibles.map((item) => item.name) ?? []),
+    statuses: uniqueValues(
+      (catalogs?.statuses ?? [
+        'active',
+        'inactive',
+        'in_maintenance',
+        'damaged',
+        'retired',
+        'lost',
+      ]).map(equipmentStatusLabel)
+    ),
+    types: uniqueValues(catalogs?.types ?? []),
   }
   const listRows = maxLength([
     listValues.statuses,
@@ -281,14 +293,22 @@ function createTemplateWorkbook(catalogs: EquipmentCatalogs | null) {
     ['xl/workbook.xml', workbookXml()],
     ['xl/_rels/workbook.xml.rels', workbookRelsXml()],
     ['xl/styles.xml', stylesXml()],
-    ['xl/worksheets/sheet1.xml', equipmentSheetXml()],
+    ['xl/worksheets/sheet1.xml', equipmentSheetXml(listValues)],
     ['xl/worksheets/sheet2.xml', listsSheetXml(listValues, listRows)],
   ])
 
   return buildZip(files)
 }
 
-function equipmentSheetXml() {
+function equipmentSheetXml(lists: {
+  brands: string[]
+  headquarters: string[]
+  locations: string[]
+  ownershipTypes: string[]
+  responsibles: string[]
+  statuses: string[]
+  types: string[]
+}) {
   const headerCells = templateHeaders
     .map((header, index) => cellXml(columnName(index + 1), 1, header))
     .join('')
@@ -308,17 +328,24 @@ function equipmentSheetXml() {
     <row r="1">${headerCells}</row>
     <row r="2">${emptyRowCells}</row>
   </sheetData>
-  <dataValidations count="7">
-    <dataValidation type="list" allowBlank="1" sqref="G2:G200"><formula1>Listas!$A$2:$A$7</formula1></dataValidation>
-    <dataValidation type="list" allowBlank="1" sqref="H2:H200"><formula1>Listas!$B$2:$B$3</formula1></dataValidation>
-    <dataValidation type="list" allowBlank="1" sqref="I2:I200"><formula1>Listas!$C$2:$C$500</formula1></dataValidation>
-    <dataValidation type="list" allowBlank="1" sqref="J2:J200"><formula1>Listas!$D$2:$D$500</formula1></dataValidation>
-    <dataValidation type="list" allowBlank="1" sqref="K2:K200"><formula1>Listas!$E$2:$E$500</formula1></dataValidation>
-    <dataValidation type="list" allowBlank="1" sqref="L2:L200"><formula1>Listas!$E$2:$E$500</formula1></dataValidation>
-    <dataValidation type="list" allowBlank="1" sqref="C2:C200"><formula1>Listas!$F$2:$F$500</formula1></dataValidation>
+  <dataValidations count="8">
+    ${dataValidationXml('C2:C200', 'F', lists.types.length, 'tipo')}
+    ${dataValidationXml('E2:E200', 'G', lists.brands.length, 'marca')}
+    ${dataValidationXml('G2:G200', 'A', lists.statuses.length, 'estado')}
+    ${dataValidationXml('H2:H200', 'B', lists.ownershipTypes.length, 'propiedad')}
+    ${dataValidationXml('I2:I200', 'C', lists.headquarters.length, 'sede')}
+    ${dataValidationXml('J2:J200', 'D', lists.locations.length, 'ubicacion')}
+    ${dataValidationXml('K2:K200', 'E', lists.responsibles.length, 'responsable')}
+    ${dataValidationXml('L2:L200', 'E', lists.responsibles.length, 'responsable secundario')}
   </dataValidations>
   <pageMargins left="0.7" right="0.7" top="0.75" bottom="0.75" header="0.3" footer="0.3"/>
 </worksheet>`)
+}
+
+function dataValidationXml(range: string, listColumn: string, listLength: number, field: string) {
+  const lastRow = Math.max(2, listLength + 1)
+
+  return `<dataValidation type="list" errorStyle="stop" allowBlank="1" showErrorMessage="1" errorTitle="Valor no valido" error="Selecciona un ${field} de la lista." sqref="${range}"><formula1>Listas!$${listColumn}$2:$${listColumn}$${lastRow}</formula1></dataValidation>`
 }
 
 function listsSheetXml(
@@ -542,6 +569,10 @@ function columnName(index: number) {
 
 function maxLength(lists: string[][]) {
   return Math.max(1, ...lists.map((list) => list.length))
+}
+
+function uniqueValues(values: readonly string[]) {
+  return Array.from(new Set(values.map((value) => value.trim()).filter(Boolean)))
 }
 
 function escapeXml(value: string) {

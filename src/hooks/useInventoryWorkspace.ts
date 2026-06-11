@@ -82,6 +82,8 @@ import type {
 } from '../types/inventory'
 import type { ActiveView, AuthState, LifeSheetState, LoadState, ModuleState } from '../types/ui'
 import { alertMetrics } from '../utils/alertMetrics'
+import { formatDate } from '../utils/dateFormat'
+import { equipmentStatusLabel, ownershipTypeLabel } from '../utils/enumLabels'
 import {
   downloadEquipmentImportTemplate,
   readEquipmentImportFile,
@@ -827,8 +829,8 @@ function downloadEquipmentCsv(equipment: Equipment[]) {
     item.type,
     item.brand,
     item.model,
-    item.status,
-    item.ownershipType,
+    equipmentStatusLabel(item.status),
+    ownershipTypeLabel(item.ownershipType),
     item.ipAddresses,
     item.macAddress,
     item.processor,
@@ -839,8 +841,8 @@ function downloadEquipmentCsv(equipment: Equipment[]) {
     [item.location?.area, item.location?.office].filter(Boolean).join(' / '),
     item.currentResponsible?.name,
     item.secondaryResponsible?.name,
-    item.lastMaintenanceAt,
-    item.nextMaintenanceAt,
+    formatDate(item.lastMaintenanceAt, ''),
+    formatDate(item.nextMaintenanceAt, ''),
     item.notes,
   ])
   const csv = [headers, ...rows].map((row) => row.map(csvCell).join(';')).join('\r\n')

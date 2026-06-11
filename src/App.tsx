@@ -140,7 +140,9 @@ function App() {
             onMarkNotificationsRead={notifications.markAllAsRead}
           />
           <MetricGrid dashboard={state.dashboard} />
-          {permissions.canViewAlerts && metrics.alertAttentionCount > 0 && (
+          {permissions.canViewAlerts &&
+            metrics.alertAttentionCount > 0 &&
+            state.activeView !== 'alerts' && (
             <AlertNotice
               activeView={state.activeView}
               count={metrics.alertAttentionCount}
@@ -157,8 +159,9 @@ function App() {
             />
           )}
 
-          {state.activeView === 'inventory' && (
-            <InventoryPage
+          <div className="app-view-transition" key={state.activeView}>
+            {state.activeView === 'inventory' && (
+              <InventoryPage
               canAssignEquipment={permissions.canAssignEquipment}
               canCreateEquipment={permissions.canCreateEquipment}
               canCreateFailureReports={permissions.canCreateFailureReports}
@@ -199,11 +202,11 @@ function App() {
               onReturnEquipment={actions.returnEquipment}
               onSelectEquipment={actions.handleSelectEquipment}
               onUploadAttachment={actions.uploadAttachment}
-            />
-          )}
+              />
+            )}
 
-          {state.activeView === 'loans' && permissions.canViewEquipmentLoans && (
-            <EquipmentLoansPage
+            {state.activeView === 'loans' && permissions.canViewEquipmentLoans && (
+              <EquipmentLoansPage
               canCreate={permissions.canAssignEquipment}
               canRequest={permissions.canViewEquipmentLoans}
               canReturn={permissions.canReturnEquipment}
@@ -217,11 +220,11 @@ function App() {
               onApproveLoan={actions.approveEquipmentLoan}
               onRejectLoan={actions.rejectEquipmentLoan}
               onReturnLoan={actions.returnEquipmentLoan}
-            />
-          )}
+              />
+            )}
 
-          {state.activeView === 'maintenance' && permissions.canViewMaintenance && (
-            <MaintenancePage
+            {state.activeView === 'maintenance' && permissions.canViewMaintenance && (
+              <MaintenancePage
               canClose={permissions.canCloseMaintenance}
               canCreate={permissions.canCreateMaintenance}
               canUpdate={permissions.canUpdateMaintenance}
@@ -243,11 +246,11 @@ function App() {
               onStart={(scheduleId) =>
                 actions.handleScheduleAction(() => actions.startMaintenanceSchedule(scheduleId))
               }
-            />
-          )}
+              />
+            )}
 
-          {state.activeView === 'headquarters' && permissions.canViewSettings && (
-            <HeadquartersPage
+            {state.activeView === 'headquarters' && permissions.canViewSettings && (
+              <HeadquartersPage
               canManageHeadquarters={permissions.canManageHeadquarters}
               canManageLocations={permissions.canManageLocations}
               canManageEquipmentTypes={permissions.canManageEquipmentTypes}
@@ -277,24 +280,24 @@ function App() {
               onUpdateHeadquarter={actions.updateHeadquarter}
               onUpdateLocation={actions.updateLocation}
               onUpdateEquipmentType={actions.updateEquipmentType}
-            />
-          )}
+              />
+            )}
 
-          {state.activeView === 'settings' && (
-            <ConfigurationPage
+            {state.activeView === 'settings' && (
+              <ConfigurationPage
               notificationsCount={notifications.items.length}
               preferences={preferences}
               onClearNotifications={notifications.clear}
               onChange={(changes: Partial<UserPreferences>) => updatePreferences(changes)}
-            />
-          )}
+              />
+            )}
 
-          {state.activeView === 'users' && permissions.canManageUsers && (
-            <UserManagementPage currentUserId={user?.id ?? null} />
-          )}
+            {state.activeView === 'users' && permissions.canManageUsers && (
+              <UserManagementPage currentUserId={user?.id ?? null} />
+            )}
 
-          {state.activeView === 'alerts' && permissions.canViewAlerts && (
-            <AlertsPage
+            {state.activeView === 'alerts' && permissions.canViewAlerts && (
+              <AlertsPage
               alerts={state.alerts}
               canManage={permissions.canManageAlerts}
               currentUserId={user?.id ?? null}
@@ -317,10 +320,10 @@ function App() {
               onSelfAssign={(alertId) =>
                 actions.handleAlertAction(() => actions.selfAssignAlert(alertId), 'Falla tomada')
               }
-            />
-          )}
-          {state.activeView === 'cases' && permissions.canViewAlerts && (
-            <MyCasesPage
+              />
+            )}
+            {state.activeView === 'cases' && permissions.canViewAlerts && (
+              <MyCasesPage
               alerts={state.alerts}
               currentUserId={user?.id ?? null}
               status={state.alertsStatus}
@@ -338,8 +341,9 @@ function App() {
 
                 actions.handleAlertAction(action, 'Caso cerrado')
               }}
-            />
-          )}
+              />
+            )}
+          </div>
         </div>
         <EquipmentFormModal
           catalogs={state.equipmentCatalogs}
