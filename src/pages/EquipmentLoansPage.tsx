@@ -4,18 +4,27 @@ import type {
   Equipment,
   EquipmentCatalogs,
   EquipmentLoan,
+  LoanEquipment,
+  RequestEquipmentLoanPayload,
   ReturnEquipmentLoanPayload,
 } from '../types/inventory'
 import type { ModuleState } from '../types/ui'
+import { formatDate } from '../utils/dateFormat'
+import { DateInput } from '../components/DateInput'
 
 type EquipmentLoansPageProps = {
   canCreate: boolean
+  canRequest: boolean
   canReturn: boolean
   catalogs: EquipmentCatalogs | null
   equipment: Equipment[]
   loans: EquipmentLoan[]
+  requestableEquipment: LoanEquipment[]
   status: ModuleState
   onCreateLoan: (payload: CreateEquipmentLoanPayload) => Promise<void>
+  onRequestLoan: (payload: RequestEquipmentLoanPayload) => Promise<void>
+  onApproveLoan: (loanId: string, equipmentId: string) => Promise<void>
+  onRejectLoan: (loanId: string, reason: string) => Promise<void>
   onReturnLoan: (loanId: string, payload: ReturnEquipmentLoanPayload) => Promise<void>
 }
 
@@ -28,6 +37,8 @@ type SearchableOption = {
 const statusStyles: Record<string, string> = {
   active: 'border-cyan-800 bg-cyan-950/40 text-cyan-200',
   overdue: 'border-red-800 bg-red-950/40 text-red-200',
+  rejected: 'border-rose-800 bg-rose-950/40 text-rose-200',
+  requested: 'border-amber-800 bg-amber-950/40 text-amber-200',
   returned: 'border-emerald-800 bg-emerald-950/40 text-emerald-200',
 }
 
@@ -35,17 +46,7 @@ function today() {
   return new Date().toISOString().slice(0, 10)
 }
 
-function formatDate(value: string | null | undefined) {
-  if (!value) return 'Sin fecha'
-
-  return new Intl.DateTimeFormat('es-CO', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  }).format(new Date(value))
-}
-
-function equipmentLabel(equipment: EquipmentLoan['equipment'] | Equipment) {
+function equipmentLabel(equipment: NonNullable<EquipmentLoan['equipment']> | Equipment) {
   const model = [equipment.brand, equipment.model].filter(Boolean).join(' ')
 
   return `${equipment.internalCode} / ${model || equipment.type}`
@@ -53,12 +54,17 @@ function equipmentLabel(equipment: EquipmentLoan['equipment'] | Equipment) {
 
 export function EquipmentLoansPage({
   canCreate,
+  canRequest,
   canReturn,
   catalogs,
   equipment,
   loans,
+  requestableEquipment,
   status,
   onCreateLoan,
+  onRequestLoan,
+  onApproveLoan,
+  onRejectLoan,
   onReturnLoan,
 }: EquipmentLoansPageProps) {
   const [form, setForm] = useState({
@@ -74,6 +80,10 @@ export function EquipmentLoansPage({
     userId: '',
   })
   const [returningLoan, setReturningLoan] = useState<EquipmentLoan | null>(null)
+  const [approvingLoan, setApprovingLoan] = useState<EquipmentLoan | null>(null)
+  const [approvalEquipmentId, setApprovalEquipmentId] = useState('')
+  const [rejectingLoan, setRejectingLoan] = useState<EquipmentLoan | null>(null)
+  const [rejectionReason, setRejectionReason] = useState('')
   const [returnNotes, setReturnNotes] = useState('')
   const [receivedSignatureImage, setReceivedSignatureImage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -81,6 +91,7 @@ export function EquipmentLoansPage({
 
   const activeLoans = loans.filter((loan) => loan.status === 'active' || loan.status === 'overdue')
   const overdueCount = activeLoans.filter((loan) => loan.status === 'overdue').length
+  const requestedCount = loans.filter((loan) => loan.status === 'requested').length
 
   async function handleCreate(event: FormEvent) {
     event.preventDefault()
@@ -143,6 +154,64 @@ export function EquipmentLoansPage({
     }
   }
 
+  async function handleRequest(event: FormEvent) {
+    event.preventDefault()
+    setIsSubmitting(true)
+    setHasError(false)
+
+    try {
+      await onRequestLoan({
+        estimatedReturnAt: form.estimatedReturnAt,
+        notes: form.notes || undefined,
+        requestedItem: form.requestedItem,
+      })
+      setForm((current) => ({
+        ...current,
+        estimatedReturnAt: '',
+        notes: '',
+        requestedItem: '',
+      }))
+    } catch {
+      setHasError(true)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  async function handleApprove(event: FormEvent) {
+    event.preventDefault()
+    if (!approvingLoan || !approvalEquipmentId) return
+
+    setIsSubmitting(true)
+    setHasError(false)
+    try {
+      await onApproveLoan(approvingLoan.id, approvalEquipmentId)
+      setApprovingLoan(null)
+      setApprovalEquipmentId('')
+    } catch {
+      setHasError(true)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  async function handleReject(event: FormEvent) {
+    event.preventDefault()
+    if (!rejectingLoan) return
+
+    setIsSubmitting(true)
+    setHasError(false)
+    try {
+      await onRejectLoan(rejectingLoan.id, rejectionReason)
+      setRejectingLoan(null)
+      setRejectionReason('')
+    } catch {
+      setHasError(true)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   return (
     <section className="grid flex-1 gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
       <div className="rounded-lg border border-slate-800 bg-slate-900">
@@ -153,7 +222,8 @@ export function EquipmentLoansPage({
               {activeLoans.length} activos / {overdueCount} vencidos
             </p>
           </div>
-          <div className="grid grid-cols-3 gap-2 text-center text-sm">
+          <div className="grid grid-cols-4 gap-2 text-center text-sm">
+            <Metric label="Solicitudes" value={requestedCount} />
             <Metric label="Activos" value={activeLoans.length} />
             <Metric label="Vencidos" value={overdueCount} />
             <Metric label="Historico" value={loans.length} />
@@ -197,14 +267,24 @@ export function EquipmentLoansPage({
                         {loan.statusLabel}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-white">{equipmentLabel(loan.equipment)}</td>
+                    <td className="px-4 py-3 text-white">
+                      {loan.equipment ? equipmentLabel(loan.equipment) : <span className="text-amber-300">Sin asignar</span>}
+                    </td>
                     <td className="px-4 py-3 text-slate-300">{loan.borrowerLabel}</td>
-                    <td className="px-4 py-3 text-slate-300">{loan.requestedItem}</td>
+                    <td className="px-4 py-3 text-slate-300">
+                      <div>{loan.requestedItem}</div>
+                      {loan.rejectionReason && <div className="mt-1 text-xs text-rose-300">{loan.rejectionReason}</div>}
+                    </td>
                     <td className="px-4 py-3 text-slate-300">{formatDate(loan.loanedAt)}</td>
                     <td className="px-4 py-3 text-slate-300">{formatDate(loan.estimatedReturnAt)}</td>
                     <td className="px-4 py-3 text-slate-300">{loan.requestMode ?? 'Sin modo'}</td>
                     <td className="px-4 py-3">
-                      {canReturn && !loan.returnedAt && loan.status !== 'returned' ? (
+                      {canCreate && loan.status === 'requested' ? (
+                        <div className="flex gap-2">
+                          <button className="rounded-md border border-emerald-700 px-3 py-1.5 text-sm font-medium text-emerald-100 transition hover:border-emerald-400" disabled={isSubmitting} type="button" onClick={() => setApprovingLoan(loan)}>Asignar equipo</button>
+                          <button className="rounded-md border border-rose-800 px-3 py-1.5 text-sm font-medium text-rose-200 transition hover:border-rose-500" type="button" onClick={() => setRejectingLoan(loan)}>Rechazar</button>
+                        </div>
+                      ) : canReturn && (loan.status === 'active' || loan.status === 'overdue') && !loan.returnedAt ? (
                         <button
                           className="rounded-md border border-emerald-700 px-3 py-1.5 text-sm font-medium text-emerald-100 transition hover:border-emerald-400 hover:text-white"
                           type="button"
@@ -226,8 +306,8 @@ export function EquipmentLoansPage({
 
       <aside className="space-y-4 rounded-lg border border-slate-800 bg-slate-900 p-5">
         <div>
-          <p className="text-xs uppercase tracking-wide text-cyan-300">Registro</p>
-          <h3 className="mt-1 text-lg font-semibold text-white">Nuevo prestamo</h3>
+          <p className="text-xs uppercase tracking-wide text-cyan-300">{canCreate ? 'Registro' : 'Solicitud'}</p>
+          <h3 className="mt-1 text-lg font-semibold text-white">{canCreate ? 'Nuevo prestamo' : 'Solicitar equipo'}</h3>
         </div>
 
         {hasError && (
@@ -335,10 +415,18 @@ export function EquipmentLoansPage({
               {isSubmitting ? 'Guardando...' : 'Crear prestamo'}
             </button>
           </form>
+        ) : canRequest ? (
+          <form className="space-y-3" onSubmit={handleRequest}>
+            <Input label="Que necesitas" value={form.requestedItem} onChange={(requestedItem) => setForm((current) => ({ ...current, requestedItem }))} />
+            <Input label="Devolucion estimada" type="date" value={form.estimatedReturnAt} onChange={(estimatedReturnAt) => setForm((current) => ({ ...current, estimatedReturnAt }))} />
+            <Textarea label="Observaciones" value={form.notes} onChange={(notes) => setForm((current) => ({ ...current, notes }))} />
+            <button className="w-full rounded-md border border-cyan-700 px-3 py-2 text-sm font-medium text-cyan-100 transition hover:border-cyan-400 disabled:cursor-not-allowed disabled:opacity-50" disabled={isSubmitting || !form.requestedItem || !form.estimatedReturnAt} type="submit">
+              {isSubmitting ? 'Enviando...' : 'Enviar solicitud'}
+            </button>
+            <p className="text-xs text-slate-500">Inventario elegira el equipo adecuado cuando revise la solicitud.</p>
+          </form>
         ) : (
-          <p className="rounded-md border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-slate-400">
-            Tu rol tiene acceso de consulta para los prestamos.
-          </p>
+          <p className="text-sm text-slate-400">No tienes permisos para solicitar equipos.</p>
         )}
       </aside>
 
@@ -352,7 +440,7 @@ export function EquipmentLoansPage({
               <div>
                 <p className="text-xs uppercase tracking-wide text-emerald-300">Recibir equipo</p>
                 <h3 className="mt-1 text-lg font-semibold text-white">
-                  {equipmentLabel(returningLoan.equipment)}
+                  {returningLoan.equipment ? equipmentLabel(returningLoan.equipment) : 'Equipo sin asignar'}
                 </h3>
                 <p className="mt-1 text-sm text-slate-400">{returningLoan.borrowerLabel}</p>
               </div>
@@ -384,6 +472,47 @@ export function EquipmentLoansPage({
           </form>
         </div>
       )}
+
+      {approvingLoan && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/80 px-4 py-6">
+          <form className="w-full max-w-xl rounded-lg border border-slate-700 bg-slate-900 p-5 shadow-2xl" onSubmit={handleApprove}>
+            <p className="text-xs uppercase tracking-wide text-emerald-300">Asignar equipo</p>
+            <h3 className="mt-1 text-lg font-semibold text-white">{approvingLoan.requestedItem}</h3>
+            <p className="mt-1 text-sm text-slate-400">Solicitud de {approvingLoan.borrowerLabel}</p>
+            <div className="mt-5">
+              <SearchableSelect
+                label="Equipo a entregar"
+                placeholder="Buscar equipo disponible"
+                value={approvalEquipmentId}
+                onChange={setApprovalEquipmentId}
+                options={requestableEquipment.map((item) => ({
+                  label: equipmentLabel(item),
+                  searchText: [item.internalCode, item.assetTag, item.serial, item.type, item.brand, item.model].filter(Boolean).join(' '),
+                  value: item.id,
+                }))}
+              />
+            </div>
+            <div className="mt-5 flex justify-end gap-2">
+              <button className="rounded-md border border-slate-700 px-3 py-2 text-sm text-slate-300" type="button" onClick={() => { setApprovingLoan(null); setApprovalEquipmentId('') }}>Cancelar</button>
+              <button className="rounded-md border border-emerald-700 px-3 py-2 text-sm font-medium text-emerald-100 disabled:opacity-50" disabled={isSubmitting || !approvalEquipmentId} type="submit">Aprobar y asignar</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {rejectingLoan && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/80 px-4 py-6">
+          <form className="w-full max-w-lg rounded-lg border border-slate-700 bg-slate-900 p-5 shadow-2xl" onSubmit={handleReject}>
+            <p className="text-xs uppercase tracking-wide text-rose-300">Rechazar solicitud</p>
+            <h3 className="mt-1 text-lg font-semibold text-white">{rejectingLoan.requestedItem}</h3>
+            <div className="mt-4"><Textarea label="Motivo del rechazo" value={rejectionReason} onChange={setRejectionReason} /></div>
+            <div className="mt-5 flex justify-end gap-2">
+              <button className="rounded-md border border-slate-700 px-3 py-2 text-sm text-slate-300" type="button" onClick={() => setRejectingLoan(null)}>Cancelar</button>
+              <button className="rounded-md border border-rose-800 px-3 py-2 text-sm font-medium text-rose-200 disabled:opacity-50" disabled={isSubmitting || rejectionReason.trim().length < 2} type="submit">Confirmar rechazo</button>
+            </div>
+          </form>
+        </div>
+      )}
     </section>
   )
 }
@@ -410,6 +539,10 @@ function Input({
   type?: string
   value: string
 }) {
+  if (type === 'date') {
+    return <DateInput disabled={disabled} label={label} value={value} onChange={onChange} />
+  }
+
   return (
     <label className="block text-sm">
       <span className="text-slate-500">{label}</span>

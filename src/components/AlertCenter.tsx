@@ -5,6 +5,7 @@ import {
 } from './contextActionMenu/ContextActionMenu'
 import type { Alert, Responsible } from '../types/inventory'
 import { AppLoader } from './Loaders'
+import { formatDate } from '../utils/dateFormat'
 
 type AlertCenterProps = {
   alerts: Alert[]
@@ -19,18 +20,6 @@ type AlertCenterProps = {
   onResolve: (alertId: string) => void
   onRunChecks: () => void
   onSelfAssign: (alertId: string) => void
-}
-
-function formatDate(value: string | null | undefined) {
-  if (!value) {
-    return 'Sin fecha'
-  }
-
-  return new Intl.DateTimeFormat('es-CO', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  }).format(new Date(value))
 }
 
 export function AlertCenter({

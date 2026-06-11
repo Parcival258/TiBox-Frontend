@@ -15,6 +15,7 @@ import {
   ownershipTypeLabel,
   priorityLabel,
 } from '../utils/enumLabels'
+import { formatDate } from '../utils/dateFormat'
 
 type EquipmentLifeSheetProps = {
   canResolveFailures?: boolean
@@ -22,18 +23,6 @@ type EquipmentLifeSheetProps = {
   onDeleteAttachment?: (attachmentId: string) => Promise<void>
   onResolveFailure?: (failureReportId: string) => Promise<void>
   status: 'idle' | 'loading' | 'ready' | 'error'
-}
-
-function formatDate(value: string | null | undefined) {
-  if (!value) {
-    return 'Sin fecha'
-  }
-
-  return new Intl.DateTimeFormat('es-CO', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  }).format(new Date(value))
 }
 
 function valueOrEmpty(value: string | null | undefined) {

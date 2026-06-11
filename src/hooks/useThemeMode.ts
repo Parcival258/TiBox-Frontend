@@ -16,5 +16,5 @@ export function useThemeMode() {
     setTheme((current) => (current === 'dark' ? 'light' : 'dark'))
   }
 
-  return { theme, toggleTheme }
+  return { setTheme, theme, toggleTheme }
 }

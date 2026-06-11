@@ -3,12 +3,11 @@ import type { NotificationItem } from '../hooks/useNotificationInbox'
 
 type DashboardHeaderProps = {
   notifications: NotificationItem[]
+  notificationsEnabled: boolean
   status: 'loading' | 'ready' | 'error'
-  theme: 'dark' | 'light'
   unreadNotifications: number
   onClearNotifications: () => void
   onMarkNotificationsRead: () => void
-  onToggleTheme: () => void
 }
 
 const statusLabel = {
@@ -19,12 +18,11 @@ const statusLabel = {
 
 export function DashboardHeader({
   notifications,
+  notificationsEnabled,
   onClearNotifications,
   status,
-  theme,
   unreadNotifications,
   onMarkNotificationsRead,
-  onToggleTheme,
 }: DashboardHeaderProps) {
   return (
     <header className="flex flex-col gap-4 border-b border-slate-800 pb-5 sm:flex-row sm:items-center sm:justify-between">
@@ -39,23 +37,14 @@ export function DashboardHeader({
           {statusLabel[status]}
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2 text-sm text-slate-400">
-          <NotificationBell
-            notifications={notifications}
-            unreadCount={unreadNotifications}
-            onClear={onClearNotifications}
-            onMarkAllRead={onMarkNotificationsRead}
-          />
-          <label className="theme-toggle-switch" title={theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}>
-            <span className="sr-only">{theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}</span>
-            <input
-              aria-label={theme === 'dark' ? 'Activar modo claro' : 'Activar modo oscuro'}
-              checked={theme === 'light'}
-              className="theme-toggle-checkbox"
-              type="checkbox"
-              onChange={onToggleTheme}
+          {notificationsEnabled && (
+            <NotificationBell
+              notifications={notifications}
+              unreadCount={unreadNotifications}
+              onClear={onClearNotifications}
+              onMarkAllRead={onMarkNotificationsRead}
             />
-            <span className="theme-toggle-slider" aria-hidden="true" />
-          </label>
+          )}
         </div>
       </div>
     </header>

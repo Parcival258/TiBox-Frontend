@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { Alert } from '../types/inventory'
 import { AppLoader } from './Loaders'
+import { formatDate } from '../utils/dateFormat'
 
 type MyCasesPanelProps = {
   alerts: Alert[]
@@ -9,18 +10,6 @@ type MyCasesPanelProps = {
   onDismiss: (alertId: string) => void
   onResolveCase: (alert: Alert) => void
   status: 'loading' | 'ready' | 'error'
-}
-
-function formatDate(value: string | null | undefined) {
-  if (!value) {
-    return 'Sin fecha'
-  }
-
-  return new Intl.DateTimeFormat('es-CO', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  }).format(new Date(value))
 }
 
 export function MyCasesPanel({

@@ -1,5 +1,6 @@
 import { useEffect, useId, useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import { useEscapeKey } from '../hooks/useEscapeKey'
+import { DateInput } from './DateInput'
 import type {
   CreateMaintenanceSchedulePayload,
   Equipment,
@@ -292,6 +293,18 @@ function Input({
   type?: string
   value: string
 }) {
+  if (type === 'date') {
+    return (
+      <DateInput
+        label={label}
+        min={min}
+        required={required}
+        value={value}
+        onChange={onChange}
+      />
+    )
+  }
+
   return (
     <label className="block text-sm">
       <span className="text-slate-500">{label}</span>

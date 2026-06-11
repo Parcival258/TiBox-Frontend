@@ -30,7 +30,11 @@ function readStoredNotifications(userId: string | null): NotificationItem[] {
   }
 }
 
-export function useNotificationInbox(userId: string | null) {
+export function useNotificationInbox(
+  userId: string | null,
+  enabled = true,
+  soundEnabled = false
+) {
   const [notifications, setNotifications] = useState<NotificationItem[]>([])
 
   useEffect(() => {
@@ -47,6 +51,14 @@ export function useNotificationInbox(userId: string | null) {
   )
 
   function addNotification(notification: Omit<NotificationItem, 'createdAt' | 'id' | 'readAt'>) {
+    if (!enabled) {
+      return
+    }
+
+    if (soundEnabled) {
+      playNotificationSound()
+    }
+
     setNotifications((current) => {
       const createdAt = new Date().toISOString()
       const nextNotification: NotificationItem = {
@@ -80,4 +92,24 @@ export function useNotificationInbox(userId: string | null) {
     notifications,
     unreadCount,
   }
+}
+
+function playNotificationSound() {
+  const AudioContextClass = window.AudioContext
+
+  if (!AudioContextClass) {
+    return
+  }
+
+  const context = new AudioContextClass()
+  const oscillator = context.createOscillator()
+  const gain = context.createGain()
+  oscillator.frequency.value = 720
+  gain.gain.setValueAtTime(0.05, context.currentTime)
+  gain.gain.exponentialRampToValueAtTime(0.001, context.currentTime + 0.16)
+  oscillator.connect(gain)
+  gain.connect(context.destination)
+  oscillator.start()
+  oscillator.stop(context.currentTime + 0.16)
+  oscillator.addEventListener('ended', () => context.close())
 }

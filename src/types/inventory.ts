@@ -84,6 +84,19 @@ export type EquipmentCatalogs = {
   technicians: Responsible[]
 }
 
+export type EquipmentType = {
+  id: string
+  name: string
+  description: string | null
+  isActive: boolean
+}
+
+export type EquipmentTypePayload = {
+  name: string
+  description?: string
+  isActive?: boolean
+}
+
 export type EquipmentPayload = {
   internalCode: string
   assetTag?: string
@@ -131,21 +144,31 @@ export type EquipmentAssignment = {
   notes: string | null
 }
 
-export type EquipmentLoanStatus = 'active' | 'returned' | 'overdue' | 'cancelled'
+export type EquipmentLoanStatus =
+  | 'requested'
+  | 'active'
+  | 'returned'
+  | 'overdue'
+  | 'cancelled'
+  | 'rejected'
+
+export type LoanEquipment = {
+  id: string
+  internalCode: string
+  assetTag?: string | null
+  serial?: string
+  type: string
+  brand: string | null
+  model: string | null
+}
 
 export type EquipmentLoan = {
   id: string
   borrowerLabel: string
   borrowerName: string | null
-  equipment: {
-    id: string
-    internalCode: string
-    type: string
-    brand: string | null
-    model: string | null
-  }
+  equipment: LoanEquipment | null
   estimatedReturnAt: string
-  loanedAt: string
+  loanedAt: string | null
   notes: string | null
   receivedSignatureImage: string | null
   requestedAt: string
@@ -155,7 +178,14 @@ export type EquipmentLoan = {
   signatureImage: string | null
   status: EquipmentLoanStatus
   statusLabel: string
+  rejectionReason: string | null
   user: Responsible | null
+}
+
+export type RequestEquipmentLoanPayload = {
+  estimatedReturnAt: string
+  notes?: string
+  requestedItem: string
 }
 
 export type CreateEquipmentLoanPayload = {

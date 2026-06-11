@@ -6,11 +6,13 @@ import {
   type ContextMenuState,
 } from './contextActionMenu/ContextActionMenu'
 import { AppLoader } from './Loaders'
+import { DateInput } from './DateInput'
 import {
   maintenanceStatusLabel,
   maintenanceTypeLabel,
   priorityLabel,
 } from '../utils/enumLabels'
+import { displayDateToIso, formatDate } from '../utils/dateFormat'
 
 type MaintenanceScheduleBoardProps = {
   canClose: boolean
@@ -27,18 +29,6 @@ type MaintenanceScheduleBoardProps = {
   onMarkPending: (scheduleId: string) => void
   onReschedule: (scheduleId: string, scheduledFor: string) => void
   onStart: (scheduleId: string) => void
-}
-
-function formatDate(value: string | null | undefined) {
-  if (!value) {
-    return 'Sin fecha'
-  }
-
-  return new Intl.DateTimeFormat('es-CO', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  }).format(new Date(value))
 }
 
 function equipmentName(schedule: MaintenanceSchedule) {
@@ -77,10 +67,17 @@ export function MaintenanceScheduleBoard({
   ).length
 
   function askForDate(scheduleId: string) {
-    const value = window.prompt('Nueva fecha programada (YYYY-MM-DD)')
+    const value = window.prompt('Nueva fecha programada (DD/MM/AAAA)')
 
     if (value) {
-      onReschedule(scheduleId, value)
+      const isoDate = displayDateToIso(value)
+
+      if (!isoDate) {
+        window.alert('La fecha debe tener el formato DD/MM/AAAA.')
+        return
+      }
+
+      onReschedule(scheduleId, isoDate)
     }
   }
 
@@ -374,6 +371,10 @@ function Input({
   type?: string
   value: string
 }) {
+  if (type === 'date') {
+    return <DateInput label={label} value={value} onChange={onChange} />
+  }
+
   return (
     <label className="block text-sm">
       <span className="text-slate-500">{label}</span>

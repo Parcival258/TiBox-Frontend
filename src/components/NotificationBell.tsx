@@ -1,20 +1,12 @@
 import { useState } from 'react'
 import type { NotificationItem } from '../hooks/useNotificationInbox'
+import { formatDateTime } from '../utils/dateFormat'
 
 type NotificationBellProps = {
   notifications: NotificationItem[]
   unreadCount: number
   onClear: () => void
   onMarkAllRead: () => void
-}
-
-function formatNotificationDate(value: string) {
-  return new Intl.DateTimeFormat('es-CO', {
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    month: 'short',
-  }).format(new Date(value))
 }
 
 export function NotificationBell({
@@ -89,7 +81,7 @@ export function NotificationBell({
                         </p>
                       )}
                       <p className="mt-2 text-xs text-slate-500">
-                        {formatNotificationDate(notification.createdAt)}
+                        {formatDateTime(notification.createdAt)}
                       </p>
                     </div>
                   </div>

@@ -16,16 +16,20 @@ import type {
   EquipmentLifeSheet,
   EquipmentLoan,
   EquipmentPayload,
+  EquipmentType,
+  EquipmentTypePayload,
   FailureReport,
   Headquarter,
   HeadquarterPayload,
   Location,
   LocationPayload,
+  LoanEquipment,
   MaintenanceRecord,
   MaintenanceSchedule,
   MaintenanceScheduleCatalogs,
   PaginatedResponse,
   ReturnEquipmentLoanPayload,
+  RequestEquipmentLoanPayload,
 } from '../types/inventory'
 
 export function getDashboard() {
@@ -56,6 +60,22 @@ export function getEquipmentLifeSheet(equipmentId: string) {
 
 export function getEquipmentCatalogs() {
   return getJson<EquipmentCatalogs>('/api/v1/equipment/catalogs')
+}
+
+export function getEquipmentTypes() {
+  return getJson<EquipmentType[]>('/api/v1/equipment-types')
+}
+
+export function createEquipmentType(payload: EquipmentTypePayload) {
+  return postJson<EquipmentType>('/api/v1/equipment-types', payload)
+}
+
+export function updateEquipmentType(equipmentTypeId: string, payload: EquipmentTypePayload) {
+  return patchJson<EquipmentType>(`/api/v1/equipment-types/${equipmentTypeId}`, payload)
+}
+
+export function deactivateEquipmentType(equipmentTypeId: string) {
+  return deleteJson(`/api/v1/equipment-types/${equipmentTypeId}`)
 }
 
 export function createEquipment(payload: EquipmentPayload) {
@@ -91,6 +111,22 @@ export async function getEquipmentLoans() {
 
 export function createEquipmentLoan(payload: CreateEquipmentLoanPayload) {
   return postJson<EquipmentLoan>('/api/v1/equipment-loans', payload)
+}
+
+export function requestEquipmentLoan(payload: RequestEquipmentLoanPayload) {
+  return postJson<EquipmentLoan>('/api/v1/equipment-loans/requests', payload)
+}
+
+export function getRequestableEquipment() {
+  return getJson<LoanEquipment[]>('/api/v1/equipment-loans/requestable-equipment')
+}
+
+export function approveEquipmentLoan(loanId: string, equipmentId: string) {
+  return patchJson<EquipmentLoan>(`/api/v1/equipment-loans/${loanId}/approve`, { equipmentId })
+}
+
+export function rejectEquipmentLoan(loanId: string, reason: string) {
+  return patchJson<EquipmentLoan>(`/api/v1/equipment-loans/${loanId}/reject`, { reason })
 }
 
 export function returnEquipmentLoan(loanId: string, payload: ReturnEquipmentLoanPayload) {

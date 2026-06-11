@@ -12,17 +12,18 @@ import { MetricGrid } from './components/MetricGrid'
 import { SuccessNotice } from './components/SuccessNotice'
 import { useInventoryWorkspace } from './hooks/useInventoryWorkspace'
 import { useSuccessNotice } from './hooks/useSuccessNotice'
-import { useThemeMode } from './hooks/useThemeMode'
+import { useUserPreferences } from './hooks/useUserPreferences'
 import { AlertsPage } from './pages/AlertsPage'
 import { InventoryPage } from './pages/InventoryPage'
 import { EquipmentLoansPage } from './pages/EquipmentLoansPage'
 import { MaintenancePage } from './pages/MaintenancePage'
 import { MyCasesPage } from './pages/MyCasesPage'
-import { SettingsPage } from './pages/SettingsPage'
+import { ConfigurationPage } from './pages/ConfigurationPage'
+import { HeadquartersPage } from './pages/SettingsPage'
 import { UserManagementPage } from './pages/UserManagementPage'
 import { getCurrentUser, login, logout } from './services/auth'
 import type { User } from './types/inventory'
-import type { AuthState } from './types/ui'
+import type { AuthState, UserPreferences } from './types/ui'
 import './App.css'
 
 function App() {
@@ -37,9 +38,12 @@ function App() {
     title: string
   } | null>(null)
   const { clearSuccess, showSuccess, successNotice } = useSuccessNotice()
-  const { theme, toggleTheme } = useThemeMode()
+  const { preferences, updatePreferences } = useUserPreferences(user?.id ?? null)
   const { actions, metrics, notifications, permissions, state } = useInventoryWorkspace({
     authStatus,
+    equipmentPageSize: preferences.equipmentPerPage,
+    notificationsEnabled: preferences.notificationsEnabled,
+    notificationSoundEnabled: preferences.notificationSoundEnabled,
     showSuccess,
     user,
   })
@@ -112,7 +116,7 @@ function App() {
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100">
-      <div className="flex min-h-screen w-full flex-col gap-6 px-4 py-6 sm:px-6 lg:flex-row xl:px-8">
+      <div className="app-shell flex min-h-screen w-full flex-col gap-6 px-4 py-6 sm:px-6 lg:flex-row xl:px-8">
         <AppNavigation
           activeView={state.activeView}
           alertAttentionCount={metrics.alertAttentionCount}
@@ -128,13 +132,12 @@ function App() {
 
         <div className="flex min-w-0 flex-1 flex-col">
           <DashboardHeader
-            notifications={notifications.items}
+          notifications={notifications.items}
+          notificationsEnabled={preferences.notificationsEnabled}
             status={state.status}
-            theme={theme}
             unreadNotifications={notifications.unreadCount}
             onClearNotifications={notifications.clear}
             onMarkNotificationsRead={notifications.markAllAsRead}
-            onToggleTheme={toggleTheme}
           />
           <MetricGrid dashboard={state.dashboard} />
           {permissions.canViewAlerts && metrics.alertAttentionCount > 0 && (
@@ -202,12 +205,17 @@ function App() {
           {state.activeView === 'loans' && permissions.canViewEquipmentLoans && (
             <EquipmentLoansPage
               canCreate={permissions.canAssignEquipment}
+              canRequest={permissions.canViewEquipmentLoans}
               canReturn={permissions.canReturnEquipment}
               catalogs={state.equipmentCatalogs}
               equipment={state.equipment}
               loans={state.equipmentLoans}
+              requestableEquipment={state.requestableEquipment}
               status={state.equipmentLoansStatus}
               onCreateLoan={actions.createEquipmentLoan}
+              onRequestLoan={actions.requestEquipmentLoan}
+              onApproveLoan={actions.approveEquipmentLoan}
+              onRejectLoan={actions.rejectEquipmentLoan}
               onReturnLoan={actions.returnEquipmentLoan}
             />
           )}
@@ -238,14 +246,17 @@ function App() {
             />
           )}
 
-          {state.activeView === 'settings' && permissions.canViewSettings && (
-            <SettingsPage
+          {state.activeView === 'headquarters' && permissions.canViewSettings && (
+            <HeadquartersPage
               canManageHeadquarters={permissions.canManageHeadquarters}
               canManageLocations={permissions.canManageLocations}
+              canManageEquipmentTypes={permissions.canManageEquipmentTypes}
+              equipmentTypes={state.equipmentTypes}
               headquarters={state.headquarters}
               locations={state.locations}
               onCreateHeadquarter={actions.createHeadquarter}
               onCreateLocation={actions.createLocation}
+              onCreateEquipmentType={actions.createEquipmentType}
               onDeactivateHeadquarter={(headquarterId) =>
                 requestConfirmation({
                   confirmLabel: 'Desactivar sede',
@@ -262,8 +273,19 @@ function App() {
                   title: 'Confirmar desactivacion',
                 })
               }
+              onDeactivateEquipmentType={actions.deactivateEquipmentType}
               onUpdateHeadquarter={actions.updateHeadquarter}
               onUpdateLocation={actions.updateLocation}
+              onUpdateEquipmentType={actions.updateEquipmentType}
+            />
+          )}
+
+          {state.activeView === 'settings' && (
+            <ConfigurationPage
+              notificationsCount={notifications.items.length}
+              preferences={preferences}
+              onClearNotifications={notifications.clear}
+              onChange={(changes: Partial<UserPreferences>) => updatePreferences(changes)}
             />
           )}
 

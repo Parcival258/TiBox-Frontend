@@ -1,5 +1,6 @@
 import { useId, useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import type { EquipmentCatalogs, EquipmentLifeSheet } from '../types/inventory'
+import { DateInput } from './DateInput'
 import { SuccessNotice } from './SuccessNotice'
 
 type EquipmentOperationsPanelProps = {
@@ -334,6 +335,10 @@ function Input({
   type?: string
   value: string
 }) {
+  if (type === 'date') {
+    return <DateInput label={label} value={value} onChange={onChange} />
+  }
+
   return (
     <label className="block text-sm">
       <span className="text-slate-500">{label}</span>

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import { useEscapeKey } from '../hooks/useEscapeKey'
+import { DateInput } from './DateInput'
 import type { Equipment, EquipmentCatalogs, EquipmentPayload } from '../types/inventory'
 
 type EquipmentFormModalProps = {
@@ -214,7 +215,16 @@ export function EquipmentFormModal({
             <Input label="Codigo" required value={form.internalCode} onChange={(value) => setField('internalCode', value)} />
             <Input label="Serial" required value={form.serial} onChange={(value) => setField('serial', value)} />
             <Input label="Placa de inventario" value={form.assetTag} onChange={(value) => setField('assetTag', value)} />
-            <Input label="Tipo" required value={form.type} onChange={(value) => setField('type', value)} />
+            <Select
+              label="Tipo"
+              required
+              value={form.type}
+              onChange={(value) => setField('type', value)}
+              options={Array.from(new Set([...(catalogs?.types ?? []), form.type].filter(Boolean))).map((type) => ({
+                label: type,
+                value: type,
+              }))}
+            />
             <Input label="Marca" value={form.brand} onChange={(value) => setField('brand', value)} />
             <Input label="Modelo" value={form.model} onChange={(value) => setField('model', value)} />
           </FieldGroup>
@@ -360,6 +370,10 @@ function Input({
   type?: string
   value: string
 }) {
+  if (type === 'date') {
+    return <DateInput label={label} required={required} value={value} onChange={onChange} />
+  }
+
   return (
     <label className="block text-sm">
       <span className="text-slate-500">{label}</span>
@@ -378,11 +392,13 @@ function Select({
   label,
   onChange,
   options,
+  required,
   value,
 }: {
   label: string
   onChange: (value: string) => void
   options: Array<{ label: string; value: string }>
+  required?: boolean
   value: string
 }) {
   return (
@@ -390,6 +406,7 @@ function Select({
       <span className="text-slate-500">{label}</span>
       <select
         className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-200 outline-none transition focus:border-cyan-500"
+        required={required}
         value={value}
         onChange={(event) => onChange(event.target.value)}
       >

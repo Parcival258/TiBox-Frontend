@@ -235,6 +235,132 @@
   color: var(--rail-active-text);
 }
 
+.cir-rail__item--settings:hover .cir-rail__icon svg,
+.cir-rail__item--settings:focus-visible .cir-rail__icon svg {
+  animation: cir-rail-settings-spin 2s linear infinite;
+}
+
+.cir-rail__icon svg,
+.cir-rail__b svg,
+.cir-rail__logout svg {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.cir-rail__item--inventory:hover .cir-rail__icon svg,
+.cir-rail__item--inventory:focus-visible .cir-rail__icon svg {
+  animation: cir-rail-inventory-lift 650ms ease-in-out;
+}
+
+.cir-rail__item--loans:hover .cir-rail__icon svg,
+.cir-rail__item--loans:focus-visible .cir-rail__icon svg {
+  animation: cir-rail-loans-forward 600ms ease-in-out;
+}
+
+.cir-rail__item--calendar:hover .cir-rail__icon svg,
+.cir-rail__item--calendar:focus-visible .cir-rail__icon svg {
+  animation: cir-rail-calendar-sway 650ms ease-in-out;
+}
+
+.cir-rail__item--cases:hover .cir-rail__icon svg,
+.cir-rail__item--cases:focus-visible .cir-rail__icon svg {
+  animation: cir-rail-cases-open 600ms ease-in-out;
+}
+
+.cir-rail__item--alerts:hover .cir-rail__icon svg,
+.cir-rail__item--alerts:focus-visible .cir-rail__icon svg {
+  animation: cir-rail-alert-ring 700ms ease-in-out;
+}
+
+.cir-rail__item--users:hover .cir-rail__icon svg,
+.cir-rail__item--users:focus-visible .cir-rail__icon svg {
+  animation: cir-rail-users-bounce 650ms ease-in-out;
+}
+
+.cir-rail__item--building:hover .cir-rail__icon svg,
+.cir-rail__item--building:focus-visible .cir-rail__icon svg {
+  animation: cir-rail-building-rise 650ms ease-in-out;
+}
+
+.cir-rail__b--toggle:hover svg,
+.cir-rail__b--toggle:focus-visible svg {
+  animation: cir-rail-panel-slide 600ms ease-in-out;
+}
+
+.cir-rail__logout:hover svg,
+.cir-rail__logout:focus-visible svg {
+  animation: cir-rail-logout-exit 600ms ease-in-out;
+}
+
+@keyframes cir-rail-settings-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes cir-rail-inventory-lift {
+  45% {
+    transform: translateY(-3px) scale(1.06);
+  }
+}
+
+@keyframes cir-rail-loans-forward {
+  45% {
+    transform: translateX(3px);
+  }
+}
+
+@keyframes cir-rail-calendar-sway {
+  30% {
+    transform: rotate(-7deg);
+  }
+  65% {
+    transform: rotate(6deg);
+  }
+}
+
+@keyframes cir-rail-cases-open {
+  45% {
+    transform: translateY(-2px) scaleY(1.08);
+  }
+}
+
+@keyframes cir-rail-alert-ring {
+  20%, 60% {
+    transform: rotate(-8deg);
+  }
+  40%, 80% {
+    transform: rotate(8deg);
+  }
+}
+
+@keyframes cir-rail-users-bounce {
+  40% {
+    transform: translateY(-3px) scale(1.05);
+  }
+  70% {
+    transform: translateY(1px);
+  }
+}
+
+@keyframes cir-rail-building-rise {
+  45% {
+    transform: translateY(-2px) scaleY(1.06);
+  }
+}
+
+@keyframes cir-rail-panel-slide {
+  45% {
+    transform: translateX(-2px) scale(1.05);
+  }
+}
+
+@keyframes cir-rail-logout-exit {
+  45% {
+    transform: translateX(3px);
+  }
+}
+
 .cir-rail__b:focus-visible,
 .cir-rail__item:focus-visible,
 .cir-rail__logout:focus-visible {
@@ -380,5 +506,16 @@ html[data-theme='light'] .cir-rail__avatar {
   .cir-rail__user-name,
   .cir-rail__logout span {
     transition: none;
+  }
+
+  .cir-rail__item--settings:hover .cir-rail__icon svg,
+  .cir-rail__item--settings:focus-visible .cir-rail__icon svg,
+  .cir-rail__item:hover .cir-rail__icon svg,
+  .cir-rail__item:focus-visible .cir-rail__icon svg,
+  .cir-rail__b--toggle:hover svg,
+  .cir-rail__b--toggle:focus-visible svg,
+  .cir-rail__logout:hover svg,
+  .cir-rail__logout:focus-visible svg {
+    animation: none;
   }
 }

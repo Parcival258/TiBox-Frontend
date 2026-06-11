@@ -7,19 +7,25 @@ import {
 } from '../components/contextActionMenu/ContextActionMenu'
 import { AddItemButton } from '../components/settings/AddItemButton'
 import { FloatingFormPanel } from '../components/settings/FloatingFormPanel'
-import type { Headquarter, HeadquarterPayload, Location, LocationPayload } from '../types/inventory'
+import { EquipmentTypesPanel } from '../components/settings/EquipmentTypesPanel'
+import type { EquipmentType, EquipmentTypePayload, Headquarter, HeadquarterPayload, Location, LocationPayload } from '../types/inventory'
 
 type SettingsPageProps = {
   canManageHeadquarters: boolean
   canManageLocations: boolean
+  canManageEquipmentTypes: boolean
+  equipmentTypes: EquipmentType[]
   headquarters: Headquarter[]
   locations: Location[]
   onCreateHeadquarter: (payload: HeadquarterPayload) => Promise<void>
   onCreateLocation: (payload: LocationPayload) => Promise<void>
+  onCreateEquipmentType: (payload: EquipmentTypePayload) => Promise<void>
   onDeactivateHeadquarter: (headquarterId: string) => void
   onDeactivateLocation: (locationId: string) => void
+  onDeactivateEquipmentType: (equipmentTypeId: string) => Promise<void>
   onUpdateHeadquarter: (headquarterId: string, payload: HeadquarterPayload) => Promise<void>
   onUpdateLocation: (locationId: string, payload: LocationPayload) => Promise<void>
+  onUpdateEquipmentType: (equipmentTypeId: string, payload: EquipmentTypePayload) => Promise<void>
 }
 
 type HeadquarterForm = {
@@ -56,17 +62,22 @@ const emptyLocationForm: LocationForm = {
   office: '',
 }
 
-export function SettingsPage({
+export function HeadquartersPage({
   canManageHeadquarters,
   canManageLocations,
+  canManageEquipmentTypes,
+  equipmentTypes,
   headquarters,
   locations,
   onCreateHeadquarter,
   onCreateLocation,
+  onCreateEquipmentType,
   onDeactivateHeadquarter,
   onDeactivateLocation,
+  onDeactivateEquipmentType,
   onUpdateHeadquarter,
   onUpdateLocation,
+  onUpdateEquipmentType,
 }: SettingsPageProps) {
   const [selectedHeadquarterId, setSelectedHeadquarterId] = useState(headquarters[0]?.id ?? '')
   const [editingHeadquarterId, setEditingHeadquarterId] = useState<string | null>(null)
@@ -471,6 +482,13 @@ export function SettingsPage({
           </form>
         </FloatingFormPanel>
       )}
+      <EquipmentTypesPanel
+        canManage={canManageEquipmentTypes}
+        equipmentTypes={equipmentTypes}
+        onCreate={onCreateEquipmentType}
+        onDeactivate={onDeactivateEquipmentType}
+        onUpdate={onUpdateEquipmentType}
+      />
       <ContextActionMenu menu={contextMenu} onClose={() => setContextMenu(null)} />
     </section>
   )
