@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { useEscapeKey } from '../../hooks/useEscapeKey'
 import './ContextActionMenu.css'
 
@@ -56,7 +57,7 @@ export function ContextActionMenu({ menu, onClose }: ContextActionMenuProps) {
   const safeX = Math.min(menu.x, window.innerWidth - 220)
   const safeY = Math.min(menu.y, window.innerHeight - Math.min(320, 48 + menu.actions.length * 42))
 
-  return (
+  return createPortal(
     <div
       className="context-action-menu"
       role="menu"
@@ -69,7 +70,8 @@ export function ContextActionMenu({ menu, onClose }: ContextActionMenuProps) {
           <MenuItem action={action} key={action.label} onClose={onClose} />
         ))}
       </ul>
-    </div>
+    </div>,
+    document.body
   )
 }
 

@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { NoticePortal } from './NoticePortal'
 
 type ErrorNoticeProps = {
   autoCloseMs?: number
@@ -15,6 +16,7 @@ export function ErrorNotice({ autoCloseMs = 4200, message, onClose, subText }: E
   }, [autoCloseMs, onClose])
 
   return (
+    <NoticePortal>
     <div className="notice-toast relative flex min-h-20 w-[calc(100vw-2rem)] items-center justify-around gap-4 overflow-hidden rounded-lg bg-white px-4 py-3 shadow-lg shadow-slate-950/10 sm:max-w-[330px]">
       <svg
         aria-hidden="true"
@@ -59,5 +61,6 @@ export function ErrorNotice({ autoCloseMs = 4200, message, onClose, subText }: E
         </svg>
       </button>
     </div>
+    </NoticePortal>
   )
 }

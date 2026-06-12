@@ -544,6 +544,50 @@ html[data-theme='light'] .hover\:text-white:hover {
   color: #0f172a;
 }
 
+html[data-theme='light'] .hover\:bg-slate-950\/70:hover,
+html[data-theme='light'] .hover\:bg-slate-900:hover,
+html[data-theme='light'] .hover\:bg-slate-800:hover,
+html[data-theme='light'] .focus\:bg-slate-800:focus {
+  background-color: #e0f2fe;
+  color: #0f172a;
+}
+
+html[data-theme='light'] .app-click-row,
+html[data-theme='light'] .app-context-row {
+  color: #1e293b;
+}
+
+html[data-theme='light'] .app-click-row:hover,
+html[data-theme='light'] .app-context-row:hover {
+  background-color: #e0f2fe;
+  box-shadow: inset 3px 0 0 #0891b2;
+}
+
+html[data-theme='light'] .app-click-row:focus-visible,
+html[data-theme='light'] .app-context-row:focus-visible {
+  background-color: #ecfeff;
+  outline-color: #0891b2;
+}
+
+html[data-theme='light'] .app-click-row:hover td,
+html[data-theme='light'] .app-context-row:hover td,
+html[data-theme='light'] .app-context-row:hover p,
+html[data-theme='light'] .app-context-row:hover span {
+  color: #0f172a;
+}
+
+html[data-theme='light'] button:hover:not(:disabled) {
+  border-color: #0891b2;
+}
+
+html[data-theme='light'] button:focus-visible,
+html[data-theme='light'] input:focus-visible,
+html[data-theme='light'] select:focus-visible,
+html[data-theme='light'] textarea:focus-visible {
+  outline: 2px solid #0891b2;
+  outline-offset: 2px;
+}
+
 html[data-theme='light'] input,
 html[data-theme='light'] select,
 html[data-theme='light'] textarea {
