@@ -1,0 +1,193 @@
+import {
+  getAlerts,
+  getDashboard,
+  getEquipment,
+  getEquipmentCatalogs,
+  getEquipmentLifeSheet,
+  getEquipmentLoans,
+  getEquipmentTypes,
+  getHeadquarters,
+  getLocations,
+  getMaintenanceSchedules,
+  getRequestableEquipment,
+} from '@/services/inventory'
+import type {
+  Alert,
+  DashboardSummary,
+  Equipment,
+  EquipmentCatalogs,
+  EquipmentFilters,
+  EquipmentLifeSheet,
+  EquipmentLoan,
+  EquipmentType,
+  Headquarter,
+  LoanEquipment,
+  Location,
+  MaintenanceSchedule,
+  PaginationMeta,
+} from '@/shared/types/inventory'
+import type { LifeSheetState, LoadState, ModuleState } from '@/shared/types/ui'
+
+type WorkspaceRefresherDependencies = {
+  canViewAlerts: boolean
+  canViewMaintenance: boolean
+  equipmentFilters: EquipmentFilters
+  selectedEquipmentId: string | null
+  setAlerts: (alerts: Alert[]) => void
+  setAlertsStatus: (status: ModuleState) => void
+  setDashboard: (dashboard: DashboardSummary) => void
+  setEquipment: (equipment: Equipment[]) => void
+  setEquipmentCatalogs: (catalogs: EquipmentCatalogs | null) => void
+  setEquipmentLoans: (loans: EquipmentLoan[]) => void
+  setEquipmentMeta: (meta: PaginationMeta | null) => void
+  setEquipmentTypes: (types: EquipmentType[]) => void
+  setHeadquarters: (headquarters: Headquarter[]) => void
+  setLifeSheet: (lifeSheet: EquipmentLifeSheet | null) => void
+  setLifeSheetStatus: (status: LifeSheetState) => void
+  setLocations: (locations: Location[]) => void
+  setMaintenanceSchedules: (schedules: MaintenanceSchedule[]) => void
+  setMaintenanceStatus: (status: ModuleState) => void
+  setRequestableEquipment: (equipment: LoanEquipment[]) => void
+  setEquipmentLoansStatus: (status: ModuleState) => void
+  setStatus: (status: LoadState) => void
+}
+
+export function createWorkspaceRefreshers({
+  canViewAlerts,
+  canViewMaintenance,
+  equipmentFilters,
+  selectedEquipmentId,
+  setAlerts,
+  setAlertsStatus,
+  setDashboard,
+  setEquipment,
+  setEquipmentCatalogs,
+  setEquipmentLoans,
+  setEquipmentLoansStatus,
+  setEquipmentMeta,
+  setEquipmentTypes,
+  setHeadquarters,
+  setLifeSheet,
+  setLifeSheetStatus,
+  setLocations,
+  setMaintenanceSchedules,
+  setMaintenanceStatus,
+  setRequestableEquipment,
+  setStatus,
+}: WorkspaceRefresherDependencies) {
+  function refreshDashboard() {
+    return getDashboard().then(setDashboard)
+  }
+
+  async function refreshSettingsData() {
+    await Promise.all([
+      getEquipmentTypes()
+        .then(setEquipmentTypes)
+        .catch(() => setEquipmentTypes([])),
+      getHeadquarters()
+        .then(setHeadquarters)
+        .catch(() => setHeadquarters([])),
+      getLocations()
+        .then(setLocations)
+        .catch(() => setLocations([])),
+    ])
+  }
+
+  function refreshAuxiliaryData() {
+    getEquipmentCatalogs()
+      .then(setEquipmentCatalogs)
+      .catch(() => setEquipmentCatalogs(null))
+
+    refreshSettingsData()
+  }
+
+  function refreshCoreData(filters = equipmentFilters) {
+    refreshAuxiliaryData()
+
+    return Promise.all([getDashboard(), getEquipment(filters)]).then(
+      ([dashboardResponse, equipmentResponse]) => {
+        setDashboard(dashboardResponse)
+        setEquipment(equipmentResponse.data)
+        setEquipmentMeta(equipmentResponse.meta)
+        setStatus('ready')
+      }
+    )
+  }
+
+  function refreshSelectedLifeSheet(equipmentId = selectedEquipmentId) {
+    if (!equipmentId) {
+      return Promise.resolve()
+    }
+
+    setLifeSheetStatus('loading')
+    return getEquipmentLifeSheet(equipmentId)
+      .then((response) => {
+        setLifeSheet(response)
+        setLifeSheetStatus('ready')
+      })
+      .catch(() => {
+        setLifeSheet(null)
+        setLifeSheetStatus('error')
+      })
+  }
+
+  function refreshEquipmentLoans() {
+    setEquipmentLoansStatus('loading')
+    return Promise.all([getEquipmentLoans(), getRequestableEquipment()])
+      .then(([loansResponse, equipmentResponse]) => {
+        setEquipmentLoans(loansResponse)
+        setRequestableEquipment(equipmentResponse)
+        setEquipmentLoansStatus('ready')
+      })
+      .catch(() => setEquipmentLoansStatus('error'))
+  }
+
+  function refreshAlerts() {
+    setAlertsStatus('loading')
+    return getAlerts()
+      .then((response) => {
+        setAlerts(response)
+        setAlertsStatus('ready')
+      })
+      .catch(() => setAlertsStatus('error'))
+  }
+
+  async function refreshOperationalData() {
+    const tasks: Array<Promise<unknown>> = [
+      refreshCoreData(),
+      refreshEquipmentLoans(),
+      refreshSelectedLifeSheet(),
+    ]
+
+    if (canViewMaintenance) {
+      tasks.push(
+        getMaintenanceSchedules().then((response) => {
+          setMaintenanceSchedules(response)
+          setMaintenanceStatus('ready')
+        })
+      )
+    }
+
+    if (canViewAlerts) {
+      tasks.push(
+        getAlerts().then((response) => {
+          setAlerts(response)
+          setAlertsStatus('ready')
+        })
+      )
+    }
+
+    await Promise.all(tasks)
+  }
+
+  return {
+    refreshAlerts,
+    refreshAuxiliaryData,
+    refreshCoreData,
+    refreshDashboard,
+    refreshEquipmentLoans,
+    refreshOperationalData,
+    refreshSelectedLifeSheet,
+    refreshSettingsData,
+  }
+}

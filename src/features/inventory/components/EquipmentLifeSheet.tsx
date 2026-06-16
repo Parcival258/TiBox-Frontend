@@ -1,21 +1,23 @@
-import type { ReactNode } from 'react'
 import { AppLoader } from '@/shared/ui/Loaders'
-import { equipmentAttachmentDownloadUrl } from '@/services/inventory'
 import type {
-  EquipmentAttachment,
   EquipmentLifeSheet,
-  FailureReport,
-  TechnicalHistoryItem,
 } from '@/shared/types/inventory'
 import {
-  equipmentStatusLabel,
   failureStatusLabel,
   maintenanceStatusLabel,
   maintenanceTypeLabel,
-  ownershipTypeLabel,
   priorityLabel,
 } from '@/shared/utils/enumLabels'
 import { formatDate } from '@/shared/utils/dateFormat'
+import { Metric } from './lifeSheet/LifeSheetFields'
+import { LifeSheetAttachments } from './lifeSheet/LifeSheetAttachments'
+import { LifeSheetEquipmentDetails } from './lifeSheet/LifeSheetEquipmentDetails'
+import { LifeSheetOpenFailures } from './lifeSheet/LifeSheetOpenFailures'
+import { LifeSheetTimeline } from './lifeSheet/LifeSheetTimeline'
+import {
+  technicalHistoryStatusLabel,
+  technicalHistoryTypeLabel,
+} from './lifeSheet/lifeSheetFormatters'
 
 type EquipmentLifeSheetProps = {
   canResolveFailures?: boolean
@@ -23,26 +25,6 @@ type EquipmentLifeSheetProps = {
   onDeleteAttachment?: (attachmentId: string) => Promise<void>
   onResolveFailure?: (failureReportId: string) => Promise<void>
   status: 'idle' | 'loading' | 'ready' | 'error'
-}
-
-function valueOrEmpty(value: string | null | undefined) {
-  return value || 'Sin dato'
-}
-
-function formatStorageCapacity(value: number | null | undefined) {
-  return value === null || value === undefined ? 'Sin dato' : `${value} GB`
-}
-
-function formatBytes(value: number | null | undefined) {
-  if (!value) {
-    return 'Tamano no disponible'
-  }
-
-  if (value < 1024 * 1024) {
-    return `${Math.round(value / 1024)} KB`
-  }
-
-  return `${(value / 1024 / 1024).toFixed(1)} MB`
 }
 
 export function EquipmentLifeSheet({
@@ -106,49 +88,15 @@ export function EquipmentLifeSheet({
         <Metric label="Adjuntos" value={summary.totalAttachments} />
       </div>
 
-      <OpenFailures
+      <LifeSheetOpenFailures
         canResolve={Boolean(canResolveFailures && onResolveFailure)}
         failures={openFailureReports}
         onResolveFailure={onResolveFailure}
       />
 
-      <Section title="Identificacion">
-        <Info label="Serial" value={equipment.serial} />
-        <Info label="Placa de inventario" value={valueOrEmpty(equipment.assetTag)} />
-        <Info label="Estado" value={equipmentStatusLabel(equipment.status)} />
-        <Info label="Propiedad" value={ownershipTypeLabel(equipment.ownershipType)} />
-      </Section>
+      <LifeSheetEquipmentDetails equipment={equipment} />
 
-      <Section title="Red y hardware">
-        <Info label="IP(s)" value={valueOrEmpty(equipment.ipAddresses)} />
-        <Info label="MAC" value={valueOrEmpty(equipment.macAddress)} />
-        <Info label="Procesador" value={valueOrEmpty(equipment.processor)} />
-        <Info label="Almacenamiento" value={valueOrEmpty(equipment.storageType)} />
-        <Info label="Capacidad" value={formatStorageCapacity(equipment.storageCapacityGb)} />
-      </Section>
-
-      <Section title="Ubicacion y responsables">
-        <Info label="Sede" value={valueOrEmpty(equipment.headquarter?.name)} />
-        <Info
-          label="Ubicacion"
-          value={
-            [equipment.location?.area, equipment.location?.office].filter(Boolean).join(' / ') ||
-            'Sin dato'
-          }
-        />
-        <Info label="Responsable" value={valueOrEmpty(equipment.currentResponsible?.name)} />
-        <Info label="Responsable 2" value={valueOrEmpty(equipment.secondaryResponsible?.name)} />
-      </Section>
-
-      <Section title="Garantia y arriendo">
-        <Info label="Compra" value={formatDate(equipment.purchaseDate)} />
-        <Info label="Garantia" value={formatDate(equipment.warrantyUntil)} />
-        <Info label="Proveedor" value={valueOrEmpty(equipment.leaseProvider)} />
-        <Info label="Contrato" value={valueOrEmpty(equipment.leaseContractNumber)} />
-        <Info label="Fin arriendo" value={formatDate(equipment.leaseUntil)} />
-      </Section>
-
-      <Timeline
+      <LifeSheetTimeline
         title="Historial tecnico"
         emptyText="Sin historial tecnico registrado."
         items={lifeSheet.technicalHistory.slice(0, 8).map((item) => ({
@@ -159,7 +107,7 @@ export function EquipmentLifeSheet({
         }))}
       />
 
-      <Timeline
+      <LifeSheetTimeline
         title="Mantenimientos"
         emptyText="Sin mantenimientos registrados."
         items={lifeSheet.maintenanceRecords.map((record) => ({
@@ -176,7 +124,7 @@ export function EquipmentLifeSheet({
         }))}
       />
 
-      <Timeline
+      <LifeSheetTimeline
         title="Fallas"
         emptyText="Sin fallas registradas."
         items={lifeSheet.failureReports.map((report) => ({
@@ -187,13 +135,13 @@ export function EquipmentLifeSheet({
         }))}
       />
 
-      <AttachmentList
+      <LifeSheetAttachments
         attachments={lifeSheet.attachments}
         equipmentId={equipment.id}
         onDeleteAttachment={onDeleteAttachment}
       />
 
-      <Timeline
+      <LifeSheetTimeline
         title="Asignaciones"
         emptyText="Sin asignaciones registradas."
         items={lifeSheet.assignments.map((assignment) => ({
@@ -206,7 +154,7 @@ export function EquipmentLifeSheet({
         }))}
       />
 
-      <Timeline
+      <LifeSheetTimeline
         title="Prestamos"
         emptyText="Sin prestamos registrados."
         items={lifeSheet.loans.map((loan) => ({
@@ -219,208 +167,5 @@ export function EquipmentLifeSheet({
         }))}
       />
     </aside>
-  )
-}
-
-function OpenFailures({
-  canResolve,
-  failures,
-  onResolveFailure,
-}: {
-  canResolve: boolean
-  failures: FailureReport[]
-  onResolveFailure?: (failureReportId: string) => Promise<void>
-}) {
-  if (failures.length === 0) {
-    return (
-      <section className="rounded-md border border-slate-800 bg-slate-950 px-3 py-3">
-        <h3 className="text-sm font-semibold text-white">Fallas abiertas</h3>
-        <p className="mt-2 text-sm text-slate-500">No hay fallas pendientes en este equipo.</p>
-      </section>
-    )
-  }
-
-  return (
-    <section className="rounded-md border border-amber-800 bg-amber-950/30 px-3 py-3">
-      <h3 className="text-sm font-semibold text-amber-100">Fallas abiertas</h3>
-      <div className="mt-3 space-y-3">
-        {failures.map((failure) => (
-          <article key={failure.id} className="rounded-md border border-amber-900/70 bg-slate-950 p-3">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <p className="text-sm font-semibold text-white">{failure.title}</p>
-                <p className="mt-1 text-xs text-amber-200">
-                  {failureStatusLabel(failure.status)} / Prioridad {priorityLabel(failure.priority)}
-                </p>
-                <p className="mt-2 text-sm text-slate-400">{failure.description}</p>
-                <p className="mt-2 text-xs text-slate-500">
-                  Reportada el {formatDate(failure.createdAt)}
-                </p>
-              </div>
-              {canResolve && (
-                <button
-                  className="shrink-0 rounded-md border border-emerald-800 px-3 py-2 text-xs font-medium text-emerald-200 transition hover:border-emerald-500 hover:text-white"
-                  type="button"
-                  onClick={() => onResolveFailure?.(failure.id)}
-                >
-                  Resolver falla
-                </button>
-              )}
-            </div>
-          </article>
-        ))}
-      </div>
-    </section>
-  )
-}
-
-function Metric({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="rounded-md border border-slate-800 bg-slate-950 px-3 py-2">
-      <p className="text-xs text-slate-500">{label}</p>
-      <p className="mt-1 text-lg font-semibold text-white">{value}</p>
-    </div>
-  )
-}
-
-function Section({ children, title }: { children: ReactNode; title: string }) {
-  return (
-    <section className="border-t border-slate-800 pt-4">
-      <h3 className="text-sm font-semibold text-white">{title}</h3>
-      <div className="mt-3 space-y-2">{children}</div>
-    </section>
-  )
-}
-
-function Info({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-start justify-between gap-4 text-sm">
-      <span className="text-slate-500">{label}</span>
-      <span className="max-w-[60%] text-right text-slate-200">{value}</span>
-    </div>
-  )
-}
-
-function technicalHistoryTypeLabel(item: TechnicalHistoryItem) {
-  const labels: Record<TechnicalHistoryItem['type'], string> = {
-    equipment_assignment: 'Asignacion',
-    equipment_loan: 'Prestamo',
-    failure_report: 'Falla',
-    maintenance_record: 'Mantenimiento',
-    maintenance_schedule: 'Programacion',
-  }
-
-  return labels[item.type]
-}
-
-function technicalHistoryStatusLabel(item: TechnicalHistoryItem) {
-  if (item.type === 'failure_report') {
-    return failureStatusLabel(item.status)
-  }
-
-  if (item.type === 'equipment_assignment') {
-    return item.status === 'returned' ? 'Devuelto' : 'Activo'
-  }
-
-  if (item.type === 'equipment_loan') {
-    if (item.status === 'returned') return 'Devuelto'
-    if (item.status === 'overdue') return 'Vencido'
-
-    return 'Activo'
-  }
-
-  return maintenanceStatusLabel(item.status)
-}
-
-function Timeline({
-  emptyText,
-  items,
-  title,
-}: {
-  emptyText: string
-  items: Array<{ id: string; title: string; date: string; detail: string }>
-  title: string
-}) {
-  return (
-    <section className="border-t border-slate-800 pt-4">
-      <h3 className="text-sm font-semibold text-white">{title}</h3>
-      {items.length === 0 ? (
-        <p className="mt-3 text-sm text-slate-500">{emptyText}</p>
-      ) : (
-        <div className="mt-3 space-y-3">
-          {items.slice(0, 5).map((item) => (
-            <div key={item.id} className="rounded-md border border-slate-800 bg-slate-950 p-3">
-              <div className="flex items-start justify-between gap-3">
-                <p className="text-sm font-medium text-slate-100">{item.title}</p>
-                <span className="shrink-0 text-xs text-slate-500">{item.date}</span>
-              </div>
-              <p className="mt-2 text-sm text-slate-400">{item.detail}</p>
-            </div>
-          ))}
-        </div>
-      )}
-    </section>
-  )
-}
-
-function AttachmentList({
-  attachments,
-  equipmentId,
-  onDeleteAttachment,
-}: {
-  attachments: EquipmentAttachment[]
-  equipmentId: string
-  onDeleteAttachment?: (attachmentId: string) => Promise<void>
-}) {
-  return (
-    <section className="border-t border-slate-800 pt-4">
-      <h3 className="text-sm font-semibold text-white">Adjuntos</h3>
-      {attachments.length === 0 ? (
-        <p className="mt-3 text-sm text-slate-500">Sin adjuntos registrados.</p>
-      ) : (
-        <div className="mt-3 space-y-3">
-          {attachments.slice(0, 5).map((attachment) => (
-            <div key={attachment.id} className="rounded-md border border-slate-800 bg-slate-950 p-3">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-slate-100">{attachment.fileName}</p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    {formatBytes(attachment.sizeBytes)} / {formatDate(attachment.createdAt)}
-                  </p>
-                </div>
-                <div className="flex shrink-0 gap-2">
-                  <a
-                    className="rounded-md border border-cyan-800 px-2.5 py-1 text-xs font-medium text-cyan-200 transition hover:border-cyan-500 hover:text-white"
-                    href={equipmentAttachmentDownloadUrl(equipmentId, attachment.id)}
-                    rel="noreferrer"
-                    target="_blank"
-                  >
-                    Ver
-                  </a>
-                  {onDeleteAttachment && (
-                    <button
-                      className="rounded-md border border-red-800 px-2.5 py-1 text-xs font-medium text-red-200 transition hover:border-red-500 hover:text-white"
-                      type="button"
-                      onClick={() => {
-                        const shouldDelete = window.confirm('Retirar este adjunto?')
-
-                        if (shouldDelete) {
-                          onDeleteAttachment(attachment.id)
-                        }
-                      }}
-                    >
-                      Retirar
-                    </button>
-                  )}
-                </div>
-              </div>
-              <p className="mt-2 text-xs text-slate-500">
-                Subido por {attachment.uploader?.name ?? 'Usuario no disponible'}
-              </p>
-            </div>
-          ))}
-        </div>
-      )}
-    </section>
   )
 }

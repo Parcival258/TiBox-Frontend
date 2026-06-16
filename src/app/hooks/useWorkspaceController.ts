@@ -1,6 +1,4 @@
 import { useEffect } from 'react'
-import { emptyDashboard } from '@/app/constants/dashboard'
-import { defaultEquipmentFilters } from '@/features/inventory/constants/equipmentFilters'
 import { useNotificationInbox } from '@/shared/hooks/useNotificationInbox'
 import { useRealtimeAlerts } from '@/shared/hooks/useRealtimeAlerts'
 import {
@@ -8,49 +6,20 @@ import {
   addAlertNote,
   assignAlert,
   cancelMaintenanceSchedule,
-  createEquipment,
-  createMaintenanceRecord,
-  createMaintenanceSchedule,
-  deleteEquipment,
   dismissAlert,
   finishMaintenanceSchedule,
-  getAlerts,
-  getDashboard,
-  getEquipment,
-  getEquipmentCatalogs,
-  getEquipmentTypes,
-  getEquipmentLifeSheet,
-  getEquipmentLoans,
-  getHeadquarters,
-  getLocations,
-  getRequestableEquipment,
   getMaintenanceScheduleCatalogs,
-  getMaintenanceSchedules,
   markMaintenancePending,
   rescheduleMaintenanceSchedule,
   resolveAlert,
-  runAlertChecks,
   selfAssignAlert,
   startMaintenanceSchedule,
-  updateEquipment,
 } from '@/services/inventory'
 import type {
-  CreateMaintenanceSchedulePayload,
-  Equipment,
-  EquipmentFilters,
-  EquipmentPayload,
-  FinishMaintenanceSchedulePayload,
-  MaintenanceSchedule,
   User,
 } from '@/shared/types/inventory'
 import type { AuthState } from '@/shared/types/ui'
 import { alertMetrics } from '@/shared/utils/alertMetrics'
-import {
-  downloadEquipmentImportTemplate,
-  readEquipmentImportFile,
-  type EquipmentImportResult,
-} from '@/features/inventory/utils/equipmentBulkImport'
-import { downloadEquipmentCsv } from '@/features/inventory/utils/equipmentCsv'
 import { buildWorkspacePermissions } from '@/app/hooks/workspacePermissions'
 import { useInventoryState } from '@/features/inventory/hooks/useInventoryState'
 import { useLoansState } from '@/features/loans/hooks/useLoansState'
@@ -61,6 +30,11 @@ import { useWorkspaceNavigation } from './useWorkspaceNavigation'
 import { createSettingsActions } from '@/features/settings/actions/createSettingsActions'
 import { createLoanActions } from '@/features/loans/actions/createLoanActions'
 import { createEquipmentOperationsActions } from '@/features/inventory/actions/createEquipmentOperationsActions'
+import { createInventoryWorkspaceActions } from '@/features/inventory/actions/createInventoryWorkspaceActions'
+import { createMaintenanceActions } from '@/features/maintenance/actions/createMaintenanceActions'
+import { createAlertActions } from '@/features/alerts/actions/createAlertActions'
+import { createWorkspaceRefreshers } from '@/app/actions/createWorkspaceRefreshers'
+import { createWorkspaceResetAction } from '@/app/actions/createWorkspaceResetAction'
 
 type UseWorkspaceControllerOptions = {
   authStatus: AuthState
@@ -114,24 +88,66 @@ export function useWorkspaceController({
     userId: user?.id ?? null,
   })
 
+  const refreshers = createWorkspaceRefreshers({
+    canViewAlerts: permissions.canViewAlerts,
+    canViewMaintenance: permissions.canViewMaintenance,
+    equipmentFilters,
+    selectedEquipmentId,
+    setAlerts,
+    setAlertsStatus,
+    setDashboard,
+    setEquipment,
+    setEquipmentCatalogs,
+    setEquipmentLoans,
+    setEquipmentLoansStatus,
+    setEquipmentMeta,
+    setEquipmentTypes,
+    setHeadquarters,
+    setLifeSheet,
+    setLifeSheetStatus,
+    setLocations,
+    setMaintenanceSchedules,
+    setMaintenanceStatus,
+    setRequestableEquipment,
+    setStatus,
+  })
+
+  const settingsActions = createSettingsActions({
+    refreshCoreData: refreshers.refreshCoreData,
+    refreshSettingsData: refreshers.refreshSettingsData,
+    showSuccess,
+  })
+  const loanActions = createLoanActions({
+    refreshEquipmentLoans: refreshers.refreshEquipmentLoans,
+    refreshOperationalData: refreshers.refreshOperationalData,
+    showSuccess,
+  })
+  const maintenanceActions = createMaintenanceActions({
+    refreshDashboard: refreshers.refreshDashboard,
+    refreshOperationalData: refreshers.refreshOperationalData,
+    setMaintenanceSchedules,
+    setMaintenanceStatus,
+    showSuccess,
+  })
+  const alertActions = createAlertActions({
+    refreshAlerts: refreshers.refreshAlerts,
+    refreshDashboard: refreshers.refreshDashboard,
+    setAlertsStatus,
+    setIsRunningAlerts,
+    showSuccess,
+  })
+
   useEffect(() => {
     if (authStatus !== 'authenticated') {
       return
     }
 
-    Promise.all([getDashboard(), getEquipment(equipmentFilters)])
-      .then(([dashboardResponse, equipmentResponse]) => {
-        setDashboard(dashboardResponse)
-        setEquipment(equipmentResponse.data)
-        setEquipmentMeta(equipmentResponse.meta)
-        setStatus('ready')
-      })
+    refreshers.refreshCoreData()
       .catch(() => setStatus('error'))
 
-    refreshAuxiliaryData()
-    refreshEquipmentLoans()
+    refreshers.refreshEquipmentLoans()
     if (permissions.canViewMaintenance) {
-      refreshMaintenanceSchedules()
+      maintenanceActions.refreshMaintenanceSchedules()
       getMaintenanceScheduleCatalogs().then(setMaintenanceCatalogs).catch(() => undefined)
     } else {
       setMaintenanceSchedules([])
@@ -140,7 +156,7 @@ export function useWorkspaceController({
     }
 
     if (permissions.canViewAlerts) {
-      refreshAlerts()
+      refreshers.refreshAlerts()
     } else {
       setAlerts([])
       setAlertsStatus('ready')
@@ -156,11 +172,7 @@ export function useWorkspaceController({
 
     const nextFilters = { ...equipmentFilters, page: 1, perPage: equipmentPageSize }
     setEquipmentFilters(nextFilters)
-    getEquipment(nextFilters)
-      .then((response) => {
-        setEquipment(response.data)
-        setEquipmentMeta(response.meta)
-      })
+    refreshers.refreshCoreData(nextFilters)
       .catch(() => setStatus('error'))
     // The current filter snapshot is applied when the preference changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -171,356 +183,39 @@ export function useWorkspaceController({
       return
     }
 
-    getEquipmentLifeSheet(selectedEquipmentId)
-      .then((response) => {
-        setLifeSheet(response)
-        setLifeSheetStatus('ready')
-      })
-      .catch(() => {
-        setLifeSheet(null)
-        setLifeSheetStatus('error')
-      })
+    refreshers.refreshSelectedLifeSheet(selectedEquipmentId)
+    // The selected life sheet is refreshed only when the active equipment changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authStatus, selectedEquipmentId, setLifeSheet, setLifeSheetStatus])
 
-  function handleSelectEquipment(equipmentId: string) {
-    if (equipmentId === selectedEquipmentId) {
-      if (lifeSheetStatus === 'error' || lifeSheetStatus === 'idle') {
-        refreshSelectedLifeSheet(equipmentId)
-      }
-
-      return
-    }
-
-    setSelectedEquipmentId(equipmentId)
-    setLifeSheet(null)
-    setLifeSheetStatus('loading')
-  }
-
-  function openEquipmentDetails(equipmentId: string) {
-    setSelectedEquipmentId(equipmentId)
-    setLifeSheet(null)
-    setLifeSheetStatus('loading')
-
-    return getEquipmentLifeSheet(equipmentId)
-      .then((response) => {
-        setLifeSheet(response)
-        setLifeSheetStatus('ready')
-      })
-      .catch(() => {
-        setLifeSheet(null)
-        setLifeSheetStatus('error')
-      })
-  }
-
-  function openCreateEquipment() {
-    setEquipmentFormMode('create')
-    setEditingEquipment(null)
-    setIsEquipmentFormOpen(true)
-  }
-
-  function openEditEquipment(equipmentItem: Equipment) {
-    setEquipmentFormMode('edit')
-    setEditingEquipment(equipmentItem)
-    setIsEquipmentFormOpen(true)
-  }
-
-  async function handleSubmitEquipment(payload: EquipmentPayload) {
-    if (equipmentFormMode === 'create') {
-      const createdEquipment = await createEquipment(payload)
-      setSelectedEquipmentId(createdEquipment.id)
-      await refreshCoreData()
-      await refreshSelectedLifeSheet(createdEquipment.id)
-      return
-    }
-
-    if (!editingEquipment) {
-      return
-    }
-
-    await updateEquipment(editingEquipment.id, payload)
-    await refreshCoreData()
-
-    if (selectedEquipmentId === editingEquipment.id) {
-      await refreshSelectedLifeSheet(editingEquipment.id)
-    }
-  }
-
-  function handleDeleteEquipment(equipmentId: string) {
-    return deleteEquipment(equipmentId)
-      .then(async () => {
-        if (selectedEquipmentId === equipmentId) {
-          setSelectedEquipmentId(null)
-          setLifeSheet(null)
-          setLifeSheetStatus('idle')
-        }
-
-        await refreshCoreData()
-        if (permissions.canViewMaintenance) {
-          refreshMaintenanceSchedules()
-        }
-        if (permissions.canViewAlerts) {
-          refreshAlerts()
-        }
-      })
-      .catch(() => setStatus('error'))
-  }
-
-  function refreshCoreData(filters = equipmentFilters) {
-    refreshAuxiliaryData()
-
-    return Promise.all([getDashboard(), getEquipment(filters)]).then(
-      ([dashboardResponse, equipmentResponse]) => {
-        setDashboard(dashboardResponse)
-        setEquipment(equipmentResponse.data)
-        setEquipmentMeta(equipmentResponse.meta)
-        setStatus('ready')
-      }
-    )
-  }
-
-  function refreshAuxiliaryData() {
-    getEquipmentCatalogs()
-      .then(setEquipmentCatalogs)
-      .catch(() => setEquipmentCatalogs(null))
-
-    refreshSettingsData()
-  }
-
-  async function refreshSettingsData() {
-    await Promise.all([
-      getEquipmentTypes()
-        .then(setEquipmentTypes)
-        .catch(() => setEquipmentTypes([])),
-      getHeadquarters()
-        .then(setHeadquarters)
-        .catch(() => setHeadquarters([])),
-      getLocations()
-        .then(setLocations)
-        .catch(() => setLocations([])),
-    ])
-  }
-
-  function handleChangeEquipmentFilters(filters: EquipmentFilters) {
-    const nextFilters = {
-      ...defaultEquipmentFilters,
-      ...filters,
-    }
-
-    setEquipmentFilters(nextFilters)
-    getEquipment(nextFilters)
-      .then((response) => {
-        setEquipment(response.data)
-        setEquipmentMeta(response.meta)
-      })
-      .catch(() => setStatus('error'))
-  }
-
-  function refreshSelectedLifeSheet(equipmentId = selectedEquipmentId) {
-    if (!equipmentId) {
-      return Promise.resolve()
-    }
-
-    setLifeSheetStatus('loading')
-    return getEquipmentLifeSheet(equipmentId)
-      .then((response) => {
-        setLifeSheet(response)
-        setLifeSheetStatus('ready')
-      })
-      .catch(() => {
-        setLifeSheet(null)
-        setLifeSheetStatus('error')
-      })
-  }
-
-  async function refreshOperationalData() {
-    const tasks: Array<Promise<unknown>> = [
-      refreshCoreData(),
-      refreshEquipmentLoans(),
-      refreshSelectedLifeSheet(),
-    ]
-
-    if (permissions.canViewMaintenance) {
-      tasks.push(getMaintenanceSchedules().then((response) => {
-        setMaintenanceSchedules(response)
-        setMaintenanceStatus('ready')
-      }))
-    }
-
-    if (permissions.canViewAlerts) {
-      tasks.push(getAlerts().then((response) => {
-        setAlerts(response)
-        setAlertsStatus('ready')
-      }))
-    }
-
-    await Promise.all(tasks)
-  }
-
-  function refreshMaintenanceSchedules() {
-    setMaintenanceStatus('loading')
-    getMaintenanceSchedules()
-      .then((response) => {
-        setMaintenanceSchedules(response)
-        setMaintenanceStatus('ready')
-      })
-      .catch(() => setMaintenanceStatus('error'))
-  }
-
-  function refreshEquipmentLoans() {
-    setEquipmentLoansStatus('loading')
-    return Promise.all([getEquipmentLoans(), getRequestableEquipment()])
-      .then(([loansResponse, equipmentResponse]) => {
-        setEquipmentLoans(loansResponse)
-        setRequestableEquipment(equipmentResponse)
-        setEquipmentLoansStatus('ready')
-      })
-      .catch(() => setEquipmentLoansStatus('error'))
-  }
-
-  function refreshAlerts() {
-    setAlertsStatus('loading')
-    return getAlerts()
-      .then((response) => {
-        setAlerts(response)
-        setAlertsStatus('ready')
-      })
-      .catch(() => setAlertsStatus('error'))
-  }
-
-  function handleScheduleAction(action: () => Promise<MaintenanceSchedule>) {
-    action()
-      .then(() => {
-        refreshMaintenanceSchedules()
-        return getDashboard()
-      })
-      .then(setDashboard)
-      .catch(() => setMaintenanceStatus('error'))
-  }
-
-  async function handleCreateSchedule(payload: CreateMaintenanceSchedulePayload) {
-    await createMaintenanceSchedule(payload)
-    await refreshOperationalData()
-  }
-
-  async function handleFinishSchedule(
-    schedule: MaintenanceSchedule,
-    payload: FinishMaintenanceSchedulePayload
-  ) {
-    if (!schedule.equipment?.id) {
-      return
-    }
-
-    await createMaintenanceRecord({
-      equipmentId: schedule.equipment.id,
-      maintenanceScheduleId: schedule.id,
-      maintenanceType: schedule.maintenanceType as 'preventive' | 'corrective',
-      priority: schedule.priority,
-      scheduledDate: schedule.scheduledFor,
-      status: 'completed',
-      ...payload,
-    })
-    showSuccess('Mantenimiento finalizado', 'El registro tecnico quedo asociado al cronograma.')
-    await refreshOperationalData()
-  }
-
-  async function handleExportEquipment() {
-    const filters = {
-      ...equipmentFilters,
-      page: 1,
-      perPage: 100,
-    }
-    const firstPage = await getEquipment(filters)
-    const allEquipment = [...firstPage.data]
-
-    for (let page = 2; page <= firstPage.meta.lastPage; page += 1) {
-      const response = await getEquipment({ ...filters, page })
-      allEquipment.push(...response.data)
-    }
-
-    downloadEquipmentCsv(allEquipment)
-  }
-
-  async function handleDownloadEquipmentImportTemplate() {
-    downloadEquipmentImportTemplate(equipmentCatalogs)
-  }
-
-  async function handleImportEquipment(file: File): Promise<EquipmentImportResult> {
-    const parsed = await readEquipmentImportFile(file, equipmentCatalogs)
-    const errors = [...parsed.errors]
-    let created = 0
-
-    for (const row of parsed.rows) {
-      try {
-        await createEquipment(row.payload)
-        created += 1
-      } catch {
-        errors.push(`Fila ${row.rowNumber}: no fue posible crear el equipo.`)
-      }
-    }
-
-    await refreshCoreData()
-    showSuccess(
-      'Carga masiva procesada',
-      `${created} equipo${created === 1 ? '' : 's'} creado${created === 1 ? '' : 's'}.`
-    )
-
-    return {
-      created,
-      errors,
-      total: parsed.rows.length,
-    }
-  }
-
-  function handleRunAlertChecks() {
-    setIsRunningAlerts(true)
-    runAlertChecks()
-      .then(() => {
-        refreshAlerts()
-        return getDashboard()
-      })
-      .then(setDashboard)
-      .catch(() => setAlertsStatus('error'))
-      .finally(() => setIsRunningAlerts(false))
-  }
-
-  function handleAlertAction(action: () => Promise<unknown>, message?: string) {
-    action()
-      .then(() => {
-        if (message) {
-          showSuccess(message, 'La informacion se actualizo correctamente.')
-        }
-
-        return refreshAlerts()
-      })
-      .catch(() => setAlertsStatus('error'))
-  }
-
-  function resetWorkspace() {
-    setDashboard(emptyDashboard)
-    setEquipment([])
-    setEquipmentCatalogs(null)
-    setEquipmentTypes([])
-    setEquipmentFilters({ ...defaultEquipmentFilters, perPage: equipmentPageSize })
-    setEquipmentMeta(null)
-    setMaintenanceSchedules([])
-    setEquipmentLoans([])
-    setRequestableEquipment([])
-    setMaintenanceCatalogs(null)
-    setAlerts([])
-    setEditingEquipment(null)
-    setSelectedEquipmentId(null)
-    setIsEquipmentFormOpen(false)
-    setIsScheduleFormOpen(false)
-    setLifeSheet(null)
-    setLifeSheetStatus('idle')
-    setHeadquarters([])
-    setLocations([])
-    setMaintenanceStatus('loading')
-    setEquipmentLoansStatus('loading')
-    setAlertsStatus('loading')
-    setActiveView('inventory')
-    setStatus('loading')
-  }
+  const resetWorkspace = createWorkspaceResetAction({
+    equipmentPageSize,
+    setActiveView,
+    setAlerts,
+    setAlertsStatus,
+    setDashboard,
+    setEditingEquipment,
+    setEquipment,
+    setEquipmentCatalogs,
+    setEquipmentFilters,
+    setEquipmentFormMode,
+    setEquipmentLoans,
+    setEquipmentLoansStatus,
+    setEquipmentMeta,
+    setEquipmentTypes,
+    setHeadquarters,
+    setIsEquipmentFormOpen,
+    setIsScheduleFormOpen,
+    setLifeSheet,
+    setLifeSheetStatus,
+    setLocations,
+    setMaintenanceCatalogs,
+    setMaintenanceSchedules,
+    setMaintenanceStatus,
+    setRequestableEquipment,
+    setSelectedEquipmentId,
+    setStatus,
+  })
 
   useRealtimeAlerts({
     canHandleFailureQueue: permissions.canManageFailureReports,
@@ -530,26 +225,45 @@ export function useWorkspaceController({
     enabled:
       authStatus === 'authenticated' &&
       (permissions.canViewAlerts || permissions.canViewFailureReports),
-    onDashboardRefresh: () => getDashboard().then(setDashboard),
+    onDashboardRefresh: refreshers.refreshDashboard,
     onNotify: notificationInbox.addNotification,
-    onRefresh: refreshAlerts,
-    onTicketRefresh: refreshOperationalData,
+    onRefresh: refreshers.refreshAlerts,
+    onTicketRefresh: refreshers.refreshOperationalData,
     showSuccess,
     userId: user?.id ?? null,
   })
 
-  const settingsActions = createSettingsActions({ refreshCoreData, refreshSettingsData, showSuccess })
-  const loanActions = createLoanActions({
-    refreshEquipmentLoans,
-    refreshOperationalData,
-    showSuccess,
-  })
   const equipmentOperationsActions = createEquipmentOperationsActions({
     lifeSheet,
-    refreshCoreData,
-    refreshOperationalData,
-    refreshSelectedLifeSheet,
+    refreshCoreData: refreshers.refreshCoreData,
+    refreshOperationalData: refreshers.refreshOperationalData,
+    refreshSelectedLifeSheet: refreshers.refreshSelectedLifeSheet,
     selectedEquipmentId,
+    showSuccess,
+  })
+  const inventoryWorkspaceActions = createInventoryWorkspaceActions({
+    canViewAlerts: permissions.canViewAlerts,
+    canViewMaintenance: permissions.canViewMaintenance,
+    editingEquipment,
+    equipmentCatalogs,
+    equipmentFilters,
+    equipmentFormMode,
+    lifeSheetStatus,
+    refreshAlerts: refreshers.refreshAlerts,
+    refreshCoreData: refreshers.refreshCoreData,
+    refreshMaintenanceSchedules: maintenanceActions.refreshMaintenanceSchedules,
+    refreshSelectedLifeSheet: refreshers.refreshSelectedLifeSheet,
+    selectedEquipmentId,
+    setEditingEquipment,
+    setEquipment,
+    setEquipmentFilters,
+    setEquipmentFormMode,
+    setEquipmentMeta,
+    setIsEquipmentFormOpen,
+    setLifeSheet,
+    setLifeSheetStatus,
+    setSelectedEquipmentId,
+    setStatus,
     showSuccess,
   })
 
@@ -560,24 +274,24 @@ export function useWorkspaceController({
       cancelMaintenanceSchedule,
       dismissAlert,
       finishMaintenanceSchedule,
-      handleAlertAction,
-      handleChangeEquipmentFilters,
+      handleAlertAction: alertActions.handleAlertAction,
+      handleChangeEquipmentFilters: inventoryWorkspaceActions.handleChangeEquipmentFilters,
       setEquipmentPageSize: (perPage: number) =>
-        handleChangeEquipmentFilters({ ...equipmentFilters, page: 1, perPage }),
-      handleCreateSchedule,
-      handleDeleteEquipment,
-      handleDownloadEquipmentImportTemplate,
-      handleExportEquipment,
-      handleFinishSchedule,
-      handleImportEquipment,
-      handleRunAlertChecks,
-      handleScheduleAction,
-      handleSelectEquipment,
-      handleSubmitEquipment,
+        inventoryWorkspaceActions.handleChangeEquipmentFilters({ ...equipmentFilters, page: 1, perPage }),
+      handleCreateSchedule: maintenanceActions.handleCreateSchedule,
+      handleDeleteEquipment: inventoryWorkspaceActions.handleDeleteEquipment,
+      handleDownloadEquipmentImportTemplate: inventoryWorkspaceActions.handleDownloadEquipmentImportTemplate,
+      handleExportEquipment: inventoryWorkspaceActions.handleExportEquipment,
+      handleFinishSchedule: maintenanceActions.handleFinishSchedule,
+      handleImportEquipment: inventoryWorkspaceActions.handleImportEquipment,
+      handleRunAlertChecks: alertActions.handleRunAlertChecks,
+      handleScheduleAction: maintenanceActions.handleScheduleAction,
+      handleSelectEquipment: inventoryWorkspaceActions.handleSelectEquipment,
+      handleSubmitEquipment: inventoryWorkspaceActions.handleSubmitEquipment,
       markMaintenancePending,
-      openCreateEquipment,
-      openEquipmentDetails,
-      openEditEquipment,
+      openCreateEquipment: inventoryWorkspaceActions.openCreateEquipment,
+      openEquipmentDetails: inventoryWorkspaceActions.openEquipmentDetails,
+      openEditEquipment: inventoryWorkspaceActions.openEditEquipment,
       resetWorkspace,
       rescheduleMaintenanceSchedule,
       resolveAlert,
