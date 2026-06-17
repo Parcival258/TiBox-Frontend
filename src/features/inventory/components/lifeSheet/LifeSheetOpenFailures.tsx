@@ -1,4 +1,4 @@
-import type { FailureReport } from '@/shared/types/inventory'
+import type { FailureReport } from '../../types/equipmentFailures'
 import { formatDate } from '@/shared/utils/dateFormat'
 import { failureStatusLabel, priorityLabel } from '@/shared/utils/enumLabels'
 

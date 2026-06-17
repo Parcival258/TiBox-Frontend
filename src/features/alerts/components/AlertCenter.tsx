@@ -3,7 +3,8 @@ import {
   ContextActionMenu,
   type ContextMenuState,
 } from '@/shared/ui/contextActionMenu/ContextActionMenu'
-import type { Alert, Responsible } from '@/shared/types/inventory'
+import type { Alert } from '../types'
+import type { Responsible } from '@/shared/types/person'
 import { AppLoader } from '@/shared/ui/Loaders'
 import { formatDate } from '@/shared/utils/dateFormat'
 

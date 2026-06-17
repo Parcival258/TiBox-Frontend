@@ -1,4 +1,4 @@
-import type { Headquarter } from '@/shared/types/inventory'
+import type { Headquarter } from '../types'
 
 type HeadquartersPanelProps = {
   headquarters: Headquarter[]

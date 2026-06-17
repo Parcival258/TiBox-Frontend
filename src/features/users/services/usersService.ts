@@ -1,5 +1,5 @@
 import { deleteJson, getJson, patchJson, postJson } from '@/shared/services/api'
-import type { RoleOption, User, UserPayload } from '@/shared/types/inventory'
+import type { RoleOption, User, UserPayload } from '../types'
 
 type UsersResponse = {
   users: User[]

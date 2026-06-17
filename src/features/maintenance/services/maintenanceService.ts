@@ -3,8 +3,8 @@ import type {
   CreateMaintenanceSchedulePayload,
   MaintenanceSchedule,
   MaintenanceScheduleCatalogs,
-  PaginatedResponse,
-} from '@/shared/types/inventory'
+} from '../types'
+import type { PaginatedResponse } from '@/shared/types/pagination'
 
 export async function getMaintenanceSchedules() {
   const response = await getJson<PaginatedResponse<MaintenanceSchedule>>('/api/v1/maintenance/schedules?perPage=50')

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getCurrentUser, login, logout } from '@/features/auth/services/authService'
-import type { User } from '@/shared/types/inventory'
+import type { User } from '@/features/users/types'
 import type { AuthState } from '@/shared/types/ui'
 
 export function useSession() {

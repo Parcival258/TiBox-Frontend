@@ -1,31 +1,19 @@
-import {
-  getAlerts,
-  getDashboard,
-  getEquipment,
-  getEquipmentCatalogs,
-  getEquipmentLifeSheet,
-  getEquipmentLoans,
-  getEquipmentTypes,
-  getHeadquarters,
-  getLocations,
-  getMaintenanceSchedules,
-  getRequestableEquipment,
-} from '@/services/inventory'
-import type {
-  Alert,
-  DashboardSummary,
-  Equipment,
-  EquipmentCatalogs,
-  EquipmentFilters,
-  EquipmentLifeSheet,
-  EquipmentLoan,
-  EquipmentType,
-  Headquarter,
-  LoanEquipment,
-  Location,
-  MaintenanceSchedule,
-  PaginationMeta,
-} from '@/shared/types/inventory'
+import { getDashboard } from '@/app/services/dashboardService'
+import { getAlerts } from '@/features/alerts/services/alertService'
+import { getEquipmentLoans, getRequestableEquipment } from '@/features/loans/services/loanService'
+import { getMaintenanceSchedules } from '@/features/maintenance/services/maintenanceService'
+import { getHeadquarters, getLocations } from '@/features/settings/services/settingsService'
+import { getEquipmentTypes } from '@/features/inventory/services/equipmentTypesService'
+import { getEquipment, getEquipmentCatalogs, getEquipmentLifeSheet } from '@/features/inventory/services/equipmentQuery'
+import type { Alert } from '@/features/alerts/types'
+import type { DashboardSummary } from '@/app/types/dashboard'
+import type { EquipmentCatalogs, EquipmentType } from '@/features/inventory/types/equipmentCatalogs'
+import type { Equipment, EquipmentFilters } from '@/features/inventory/types/equipmentCore'
+import type { EquipmentLifeSheet } from '@/features/inventory/types/equipmentLifeSheet'
+import type { EquipmentLoan, LoanEquipment } from '@/features/loans/types'
+import type { MaintenanceSchedule } from '@/features/maintenance/types'
+import type { Headquarter, Location } from '@/features/settings/types'
+import type { PaginationMeta } from '@/shared/types/pagination'
 import type { LifeSheetState, LoadState, ModuleState } from '@/shared/types/ui'
 
 type WorkspaceRefresherDependencies = {

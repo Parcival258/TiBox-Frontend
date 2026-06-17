@@ -1,4 +1,4 @@
-import type { TechnicalHistoryItem } from '@/shared/types/inventory'
+import type { TechnicalHistoryItem } from '../../types/equipmentHistory'
 import {
   failureStatusLabel,
   maintenanceStatusLabel,

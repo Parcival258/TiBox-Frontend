@@ -1,5 +1,6 @@
 import { getJson, patchJson, postJson } from '@/shared/services/api'
-import type { Alert, AlertCatalogs, AlertRunResult, PaginatedResponse } from '@/shared/types/inventory'
+import type { Alert, AlertCatalogs, AlertRunResult } from '../types'
+import type { PaginatedResponse } from '@/shared/types/pagination'
 
 export async function getAlerts() {
   const response = await getJson<PaginatedResponse<Alert>>('/api/v1/alerts?perPage=50')

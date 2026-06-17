@@ -1,4 +1,4 @@
-import type { User } from '@/shared/types/inventory'
+import type { User } from '@/features/users/types'
 
 export function can(user: User | null, permission: string) {
   return Boolean(user?.permissions.includes(permission))

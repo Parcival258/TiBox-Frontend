@@ -1,5 +1,6 @@
 import { type FormEvent } from 'react'
-import type { EquipmentCatalogs, EquipmentFilters } from '@/shared/types/inventory'
+import type { EquipmentCatalogs } from '../types/equipmentCatalogs'
+import type { EquipmentFilters } from '../types/equipmentCore'
 import { equipmentStatusLabel, ownershipTypeLabel } from '@/shared/utils/enumLabels'
 
 type EquipmentTableFiltersProps = {

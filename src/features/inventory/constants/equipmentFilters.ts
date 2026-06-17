@@ -1,4 +1,4 @@
-import type { EquipmentFilters } from '@/shared/types/inventory'
+import type { EquipmentFilters } from '../types/equipmentCore'
 
 export const defaultEquipmentFilters: EquipmentFilters = {
   orderBy: 'createdAt',

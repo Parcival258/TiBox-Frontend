@@ -5,12 +5,12 @@ import { HeadquartersPanel } from '@/features/settings/components/HeadquartersPa
 import { useState } from 'react'
 import type {
   Equipment,
-  EquipmentCatalogs,
   EquipmentFilters,
-  EquipmentLifeSheet as EquipmentLifeSheetType,
-  Headquarter,
-  PaginationMeta,
-} from '@/shared/types/inventory'
+} from '../types/equipmentCore'
+import type { EquipmentCatalogs } from '../types/equipmentCatalogs'
+import type { EquipmentLifeSheet as EquipmentLifeSheetType } from '../types/equipmentLifeSheet'
+import type { Headquarter } from '@/features/settings/types'
+import type { PaginationMeta } from '@/shared/types/pagination'
 import type { LifeSheetState } from '@/shared/types/ui'
 import type { EquipmentImportResult } from '@/features/inventory/utils/equipmentBulkImport'
 

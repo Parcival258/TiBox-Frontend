@@ -1,4 +1,4 @@
-import type { User } from '@/shared/types/inventory'
+import type { User } from '@/features/users/types'
 import { can } from '@/shared/utils/permissions'
 
 export function buildWorkspacePermissions(user: User | null) {

@@ -1,4 +1,4 @@
-import { createMaintenanceRecord } from '@/features/inventory/services/equipmentService'
+import { createMaintenanceRecord } from '@/features/inventory/services/equipmentMaintenanceService'
 import {
   createMaintenanceSchedule,
   getMaintenanceSchedules,
@@ -7,7 +7,7 @@ import type {
   CreateMaintenanceSchedulePayload,
   FinishMaintenanceSchedulePayload,
   MaintenanceSchedule,
-} from '@/shared/types/inventory'
+} from '../types'
 import type { ModuleState } from '@/shared/types/ui'
 
 type MaintenanceActionDependencies = {

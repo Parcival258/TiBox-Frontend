@@ -1,10 +1,10 @@
 import { useRef, useState, type ChangeEvent, type FormEvent } from 'react'
 import type {
   Equipment,
-  EquipmentCatalogs,
   EquipmentFilters,
-  PaginationMeta,
-} from '@/shared/types/inventory'
+} from '../types/equipmentCore'
+import type { EquipmentCatalogs } from '../types/equipmentCatalogs'
+import type { PaginationMeta } from '@/shared/types/pagination'
 import { InfoNotice } from '@/shared/ui/InfoNotice'
 import type { EquipmentImportResult } from '@/features/inventory/utils/equipmentBulkImport'
 import {

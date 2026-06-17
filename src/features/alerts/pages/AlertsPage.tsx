@@ -1,5 +1,6 @@
 import { AlertCenter } from '../components/AlertCenter'
-import type { Alert, Responsible } from '@/shared/types/inventory'
+import type { Alert } from '../types'
+import type { Responsible } from '@/shared/types/person'
 import type { ModuleState } from '@/shared/types/ui'
 
 type AlertsPageProps = {

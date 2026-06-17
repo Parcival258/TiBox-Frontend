@@ -1,4 +1,4 @@
-import type { Equipment, EquipmentPayload } from '@/shared/types/inventory'
+import type { Equipment, EquipmentPayload } from '../../types/equipmentCore'
 
 export type EquipmentFormState = {
   assetTag: string

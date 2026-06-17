@@ -5,7 +5,7 @@ import { MaintenancePage } from '@/features/maintenance'
 import { ConfigurationPage, HeadquartersPage } from '@/features/settings'
 import { UserManagementPage } from '@/features/users'
 import type { useWorkspaceController } from './hooks/useWorkspaceController'
-import type { User } from '@/shared/types/inventory'
+import type { User } from '@/features/users/types'
 import type { UserPreferences } from '@/shared/types/ui'
 import type { ConfirmAction } from './hooks/useConfirmAction'
 

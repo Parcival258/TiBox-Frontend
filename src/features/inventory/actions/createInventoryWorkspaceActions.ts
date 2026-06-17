@@ -1,10 +1,9 @@
 import {
   createEquipment,
   deleteEquipment,
-  getEquipment,
-  getEquipmentLifeSheet,
   updateEquipment,
-} from '../services/equipmentService'
+} from '../services/equipmentMutations'
+import { getEquipment, getEquipmentLifeSheet } from '../services/equipmentQuery'
 import {
   downloadEquipmentImportTemplate,
   readEquipmentImportFile,
@@ -14,10 +13,10 @@ import { downloadEquipmentCsv } from '../utils/equipmentCsv'
 import { defaultEquipmentFilters } from '../constants/equipmentFilters'
 import type {
   Equipment,
-  EquipmentCatalogs,
   EquipmentFilters,
   EquipmentPayload,
-} from '@/shared/types/inventory'
+} from '../types/equipmentCore'
+import type { EquipmentCatalogs } from '../types/equipmentCatalogs'
 import type { LifeSheetState, LoadState } from '@/shared/types/ui'
 
 type InventoryWorkspaceActionDependencies = {

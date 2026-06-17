@@ -3,7 +3,7 @@ import {
   ContextActionMenu,
   type ContextMenuState,
 } from '@/shared/ui/contextActionMenu/ContextActionMenu'
-import type { EquipmentType, EquipmentTypePayload } from '@/shared/types/inventory'
+import type { EquipmentType, EquipmentTypePayload } from '@/features/inventory/types/equipmentCatalogs'
 import { AddItemButton } from './AddItemButton'
 import { FloatingFormPanel } from './FloatingFormPanel'
 

@@ -1,5 +1,5 @@
-import { equipmentAttachmentDownloadUrl } from '@/services/inventory'
-import type { EquipmentAttachment } from '@/shared/types/inventory'
+import { equipmentAttachmentDownloadUrl } from '@/features/inventory/services/equipmentAttachmentsService'
+import type { EquipmentAttachment } from '../../types/equipmentAttachments'
 import { formatDate } from '@/shared/utils/dateFormat'
 import { formatBytes } from './lifeSheetFormatters'
 

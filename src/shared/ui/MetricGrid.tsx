@@ -1,4 +1,4 @@
-import type { DashboardSummary } from '@/shared/types/inventory'
+import type { DashboardSummary } from '@/app/types/dashboard'
 
 type MetricGridProps = {
   dashboard: DashboardSummary

@@ -1,6 +1,7 @@
 import { useMemo, useState, type FormEvent } from 'react'
 import { useEscapeKey } from '@/shared/hooks/useEscapeKey'
-import type { Equipment, EquipmentCatalogs, EquipmentPayload } from '@/shared/types/inventory'
+import type { EquipmentCatalogs } from '../types/equipmentCatalogs'
+import type { Equipment, EquipmentPayload } from '../types/equipmentCore'
 import { EquipmentFormSections } from './equipmentForm/EquipmentFormSections'
 import {
   equipmentToForm,

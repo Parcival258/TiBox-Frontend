@@ -1,21 +1,14 @@
 import { emptyDashboard } from '@/app/constants/dashboard'
 import { defaultEquipmentFilters } from '@/features/inventory/constants/equipmentFilters'
-import type {
-  Alert,
-  DashboardSummary,
-  Equipment,
-  EquipmentCatalogs,
-  EquipmentFilters,
-  EquipmentLifeSheet,
-  EquipmentLoan,
-  EquipmentType,
-  Headquarter,
-  LoanEquipment,
-  Location,
-  MaintenanceSchedule,
-  MaintenanceScheduleCatalogs,
-  PaginationMeta,
-} from '@/shared/types/inventory'
+import type { Alert } from '@/features/alerts/types'
+import type { DashboardSummary } from '@/app/types/dashboard'
+import type { EquipmentCatalogs, EquipmentType } from '@/features/inventory/types/equipmentCatalogs'
+import type { Equipment, EquipmentFilters } from '@/features/inventory/types/equipmentCore'
+import type { EquipmentLifeSheet } from '@/features/inventory/types/equipmentLifeSheet'
+import type { EquipmentLoan, LoanEquipment } from '@/features/loans/types'
+import type { MaintenanceSchedule, MaintenanceScheduleCatalogs } from '@/features/maintenance/types'
+import type { Headquarter, Location } from '@/features/settings/types'
+import type { PaginationMeta } from '@/shared/types/pagination'
 import type { ActiveView, LifeSheetState, LoadState, ModuleState } from '@/shared/types/ui'
 
 type WorkspaceResetDependencies = {

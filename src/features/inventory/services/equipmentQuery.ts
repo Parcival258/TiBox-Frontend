@@ -1,11 +1,11 @@
 import { getJson } from '@/shared/services/api'
 import type {
   Equipment,
-  EquipmentCatalogs,
   EquipmentFilters,
-  EquipmentLifeSheet,
-  PaginatedResponse,
-} from '@/shared/types/inventory'
+} from '../types/equipmentCore'
+import type { EquipmentCatalogs } from '../types/equipmentCatalogs'
+import type { EquipmentLifeSheet } from '../types/equipmentLifeSheet'
+import type { PaginatedResponse } from '@/shared/types/pagination'
 
 function toQueryString(filters: EquipmentFilters) {
   const params = new URLSearchParams()

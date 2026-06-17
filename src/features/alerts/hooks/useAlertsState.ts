@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { Alert } from '@/shared/types/inventory'
+import type { Alert } from '../types'
 import type { ModuleState } from '@/shared/types/ui'
 
 export function useAlertsState() {

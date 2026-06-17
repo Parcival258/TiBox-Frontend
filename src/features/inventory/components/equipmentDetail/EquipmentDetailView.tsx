@@ -1,6 +1,7 @@
 import { EquipmentLifeSheet } from '../EquipmentLifeSheet'
 import { EquipmentOperationsPanel } from '../EquipmentOperationsPanel'
-import type { EquipmentCatalogs, EquipmentLifeSheet as EquipmentLifeSheetType } from '@/shared/types/inventory'
+import type { EquipmentCatalogs } from '../../types/equipmentCatalogs'
+import type { EquipmentLifeSheet as EquipmentLifeSheetType } from '../../types/equipmentLifeSheet'
 import type { LifeSheetState } from '@/shared/types/ui'
 
 type EquipmentDetailViewProps = {

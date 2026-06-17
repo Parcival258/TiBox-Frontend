@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { EquipmentLoan, LoanEquipment } from '@/shared/types/inventory'
+import type { EquipmentLoan, LoanEquipment } from '../types'
 import type { ModuleState } from '@/shared/types/ui'
 
 export function useLoansState() {

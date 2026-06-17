@@ -2,7 +2,7 @@ import {
   createEquipmentType,
   deactivateEquipmentType,
   updateEquipmentType,
-} from '@/features/inventory/services/equipmentService'
+} from '@/features/inventory/services/equipmentTypesService'
 import {
   createHeadquarter,
   createLocation,
@@ -11,11 +11,8 @@ import {
   updateHeadquarter,
   updateLocation,
 } from '../services/settingsService'
-import type {
-  EquipmentTypePayload,
-  HeadquarterPayload,
-  LocationPayload,
-} from '@/shared/types/inventory'
+import type { EquipmentTypePayload } from '@/features/inventory/types/equipmentCatalogs'
+import type { HeadquarterPayload, LocationPayload } from '../types'
 
 type SettingsActionDependencies = {
   refreshCoreData: () => Promise<unknown>

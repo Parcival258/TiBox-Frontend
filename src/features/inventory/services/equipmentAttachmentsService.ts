@@ -1,5 +1,5 @@
 import { buildUrl, deleteJson, postForm } from '@/shared/services/api'
-import type { EquipmentAttachment } from '@/shared/types/inventory'
+import type { EquipmentAttachment } from '../types/equipmentAttachments'
 
 export function uploadEquipmentAttachment(equipmentId: string, file: File) {
   const body = new FormData()

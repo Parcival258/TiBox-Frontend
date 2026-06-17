@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { createRealtimeSocket, getRealtimeToken } from '../services/realtime'
-import type { Alert } from '@/shared/types/inventory'
+import type { Alert } from '@/features/alerts/types'
 
 type AlertRealtimeEvent =
   | 'alerts:assigned'

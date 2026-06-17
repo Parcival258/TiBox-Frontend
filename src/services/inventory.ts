@@ -1,6 +1,0 @@
-export * from '@/app/services/dashboardService'
-export * from '@/features/alerts/services/alertService'
-export * from '@/features/inventory/services/equipmentService'
-export * from '@/features/loans/services/loanService'
-export * from '@/features/maintenance/services/maintenanceService'
-export * from '@/features/settings/services/settingsService'

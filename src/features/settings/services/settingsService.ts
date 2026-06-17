@@ -1,5 +1,5 @@
 import { deleteJson, getJson, patchJson, postJson } from '@/shared/services/api'
-import type { Headquarter, HeadquarterPayload, Location, LocationPayload } from '@/shared/types/inventory'
+import type { Headquarter, HeadquarterPayload, Location, LocationPayload } from '../types'
 
 export function getHeadquarters() {
   return getJson<Headquarter[]>('/api/v1/headquarters')

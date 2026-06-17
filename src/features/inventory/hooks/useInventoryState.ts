@@ -1,14 +1,11 @@
 import { useState } from 'react'
 import { emptyDashboard } from '@/app/constants/dashboard'
 import { defaultEquipmentFilters } from '../constants/equipmentFilters'
-import type {
-  DashboardSummary,
-  Equipment,
-  EquipmentCatalogs,
-  EquipmentFilters,
-  EquipmentLifeSheet,
-  PaginationMeta,
-} from '@/shared/types/inventory'
+import type { DashboardSummary } from '@/app/types/dashboard'
+import type { EquipmentCatalogs } from '../types/equipmentCatalogs'
+import type { Equipment, EquipmentFilters } from '../types/equipmentCore'
+import type { EquipmentLifeSheet } from '../types/equipmentLifeSheet'
+import type { PaginationMeta } from '@/shared/types/pagination'
 import type { LifeSheetState, LoadState } from '@/shared/types/ui'
 
 export function useInventoryState(equipmentPageSize: number) {

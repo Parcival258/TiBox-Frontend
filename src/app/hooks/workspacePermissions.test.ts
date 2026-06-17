@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { User } from '@/shared/types/inventory'
+import type { User } from '@/features/users/types'
 import { buildWorkspacePermissions } from './workspacePermissions'
 
 const admin: User = {

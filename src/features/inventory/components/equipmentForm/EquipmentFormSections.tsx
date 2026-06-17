@@ -1,4 +1,4 @@
-import type { EquipmentCatalogs } from '@/shared/types/inventory'
+import type { EquipmentCatalogs } from '../../types/equipmentCatalogs'
 import { FieldGroup, Input, Select, Textarea } from './EquipmentFormFields'
 import type { EquipmentFormState } from './equipmentFormState'
 import { statusOptions } from './equipmentFormState'

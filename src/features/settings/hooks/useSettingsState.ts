@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import type { EquipmentType, Headquarter, Location } from '@/shared/types/inventory'
+import type { EquipmentType } from '@/features/inventory/types/equipmentCatalogs'
+import type { Headquarter, Location } from '../types'
 
 export function useSettingsState() {
   const [equipmentTypes, setEquipmentTypes] = useState<EquipmentType[]>([])

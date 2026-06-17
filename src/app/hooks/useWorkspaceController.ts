@@ -1,23 +1,20 @@
-import { useEffect } from 'react'
 import { useNotificationInbox } from '@/shared/hooks/useNotificationInbox'
-import { useRealtimeAlerts } from '@/shared/hooks/useRealtimeAlerts'
 import {
   acknowledgeAlert,
   addAlertNote,
   assignAlert,
-  cancelMaintenanceSchedule,
   dismissAlert,
-  finishMaintenanceSchedule,
-  getMaintenanceScheduleCatalogs,
-  markMaintenancePending,
-  rescheduleMaintenanceSchedule,
   resolveAlert,
   selfAssignAlert,
+} from '@/features/alerts/services/alertService'
+import {
+  cancelMaintenanceSchedule,
+  finishMaintenanceSchedule,
+  markMaintenancePending,
+  rescheduleMaintenanceSchedule,
   startMaintenanceSchedule,
-} from '@/services/inventory'
-import type {
-  User,
-} from '@/shared/types/inventory'
+} from '@/features/maintenance/services/maintenanceService'
+import type { User } from '@/features/users/types'
 import type { AuthState } from '@/shared/types/ui'
 import { alertMetrics } from '@/shared/utils/alertMetrics'
 import { buildWorkspacePermissions } from '@/app/hooks/workspacePermissions'
@@ -35,6 +32,9 @@ import { createMaintenanceActions } from '@/features/maintenance/actions/createM
 import { createAlertActions } from '@/features/alerts/actions/createAlertActions'
 import { createWorkspaceRefreshers } from '@/app/actions/createWorkspaceRefreshers'
 import { createWorkspaceResetAction } from '@/app/actions/createWorkspaceResetAction'
+import { useWorkspaceBootstrapEffects } from './useWorkspaceBootstrapEffects'
+import { createWorkspaceControllerNotifications } from './createWorkspaceControllerResult'
+import { useWorkspaceRealtimeAlerts } from './useWorkspaceRealtimeAlerts'
 
 type UseWorkspaceControllerOptions = {
   authStatus: AuthState
@@ -137,56 +137,24 @@ export function useWorkspaceController({
     showSuccess,
   })
 
-  useEffect(() => {
-    if (authStatus !== 'authenticated') {
-      return
-    }
-
-    refreshers.refreshCoreData()
-      .catch(() => setStatus('error'))
-
-    refreshers.refreshEquipmentLoans()
-    if (permissions.canViewMaintenance) {
-      maintenanceActions.refreshMaintenanceSchedules()
-      getMaintenanceScheduleCatalogs().then(setMaintenanceCatalogs).catch(() => undefined)
-    } else {
-      setMaintenanceSchedules([])
-      setMaintenanceCatalogs(null)
-      setMaintenanceStatus('ready')
-    }
-
-    if (permissions.canViewAlerts) {
-      refreshers.refreshAlerts()
-    } else {
-      setAlerts([])
-      setAlertsStatus('ready')
-    }
-    // Bootstrap is intentionally restarted only when authentication changes.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authStatus])
-
-  useEffect(() => {
-    if (authStatus !== 'authenticated' || equipmentFilters.perPage === equipmentPageSize) {
-      return
-    }
-
-    const nextFilters = { ...equipmentFilters, page: 1, perPage: equipmentPageSize }
-    setEquipmentFilters(nextFilters)
-    refreshers.refreshCoreData(nextFilters)
-      .catch(() => setStatus('error'))
-    // The current filter snapshot is applied when the preference changes.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authStatus, equipmentPageSize])
-
-  useEffect(() => {
-    if (!selectedEquipmentId || authStatus !== 'authenticated') {
-      return
-    }
-
-    refreshers.refreshSelectedLifeSheet(selectedEquipmentId)
-    // The selected life sheet is refreshed only when the active equipment changes.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authStatus, selectedEquipmentId, setLifeSheet, setLifeSheetStatus])
+  useWorkspaceBootstrapEffects({
+    authStatus,
+    equipmentFilters,
+    equipmentPageSize,
+    maintenanceActions,
+    permissions,
+    refreshers,
+    selectedEquipmentId,
+    setAlerts,
+    setAlertsStatus,
+    setEquipmentFilters,
+    setLifeSheet,
+    setLifeSheetStatus,
+    setMaintenanceCatalogs,
+    setMaintenanceSchedules,
+    setMaintenanceStatus,
+    setStatus,
+  })
 
   const resetWorkspace = createWorkspaceResetAction({
     equipmentPageSize,
@@ -217,20 +185,13 @@ export function useWorkspaceController({
     setStatus,
   })
 
-  useRealtimeAlerts({
-    canHandleFailureQueue: permissions.canManageFailureReports,
-    canManageAlerts: permissions.canManageAlerts,
-    canTrackReportedTickets: permissions.canViewFailureReports,
-    canViewAlerts: permissions.canViewAlerts,
-    enabled:
-      authStatus === 'authenticated' &&
-      (permissions.canViewAlerts || permissions.canViewFailureReports),
-    onDashboardRefresh: refreshers.refreshDashboard,
-    onNotify: notificationInbox.addNotification,
-    onRefresh: refreshers.refreshAlerts,
-    onTicketRefresh: refreshers.refreshOperationalData,
+  useWorkspaceRealtimeAlerts({
+    authStatus,
+    notificationInbox,
+    permissions,
+    refreshers,
     showSuccess,
-    userId: user?.id ?? null,
+    user,
   })
 
   const equipmentOperationsActions = createEquipmentOperationsActions({
@@ -306,12 +267,7 @@ export function useWorkspaceController({
       ...settingsActions,
     },
     metrics,
-    notifications: {
-      clear: notificationInbox.clearNotifications,
-      items: notificationInbox.notifications,
-      markAllAsRead: notificationInbox.markAllAsRead,
-      unreadCount: notificationInbox.unreadCount,
-    },
+    notifications: createWorkspaceControllerNotifications(notificationInbox),
     permissions,
     state: {
       activeView,

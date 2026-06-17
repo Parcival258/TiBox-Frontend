@@ -1,5 +1,5 @@
 import { MaintenanceScheduleBoard } from '../components/MaintenanceScheduleBoard'
-import type { FinishMaintenanceSchedulePayload, MaintenanceSchedule } from '@/shared/types/inventory'
+import type { FinishMaintenanceSchedulePayload, MaintenanceSchedule } from '../types'
 import type { ModuleState } from '@/shared/types/ui'
 
 type MaintenancePageProps = {

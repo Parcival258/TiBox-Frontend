@@ -3,10 +3,10 @@ import type {
   CreateEquipmentLoanPayload,
   EquipmentLoan,
   LoanEquipment,
-  PaginatedResponse,
   RequestEquipmentLoanPayload,
   ReturnEquipmentLoanPayload,
-} from '@/shared/types/inventory'
+} from '../types'
+import type { PaginatedResponse } from '@/shared/types/pagination'
 
 export async function getEquipmentLoans() {
   const response = await getJson<PaginatedResponse<EquipmentLoan>>('/api/v1/equipment-loans?perPage=50')

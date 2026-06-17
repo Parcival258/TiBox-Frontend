@@ -1,5 +1,5 @@
 import { deleteJson, patchJson, postJson } from '@/shared/services/api'
-import type { Equipment, EquipmentPayload } from '@/shared/types/inventory'
+import type { Equipment, EquipmentPayload } from '../types/equipmentCore'
 
 export function createEquipment(payload: EquipmentPayload) {
   return postJson<Equipment>('/api/v1/equipment', payload)

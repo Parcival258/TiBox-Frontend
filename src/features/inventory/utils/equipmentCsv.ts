@@ -1,4 +1,4 @@
-import type { Equipment } from '@/shared/types/inventory'
+import type { Equipment } from '../types/equipmentCore'
 import { formatDate } from '@/shared/utils/dateFormat'
 import { equipmentStatusLabel, ownershipTypeLabel } from '@/shared/utils/enumLabels'
 

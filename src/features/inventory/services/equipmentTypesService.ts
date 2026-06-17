@@ -1,5 +1,5 @@
 import { deleteJson, getJson, patchJson, postJson } from '@/shared/services/api'
-import type { EquipmentType, EquipmentTypePayload } from '@/shared/types/inventory'
+import type { EquipmentType, EquipmentTypePayload } from '../types/equipmentCatalogs'
 
 export function getEquipmentTypes() {
   return getJson<EquipmentType[]>('/api/v1/equipment-types')

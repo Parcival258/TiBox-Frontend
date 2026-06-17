@@ -1,5 +1,5 @@
 import { patchJson, postJson } from '@/shared/services/api'
-import type { EquipmentAssignment } from '@/shared/types/inventory'
+import type { EquipmentAssignment } from '../types/equipmentAssignments'
 
 export function assignEquipment(equipmentId: string, userId: string, notes?: string) {
   return postJson<EquipmentAssignment>(`/api/v1/equipment/${equipmentId}/assignments`, {

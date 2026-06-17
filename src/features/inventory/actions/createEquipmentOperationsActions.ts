@@ -1,13 +1,17 @@
 import {
   assignEquipment,
-  createFailureReport,
-  createMaintenanceRecord,
-  deleteEquipmentAttachment,
-  resolveFailureReport,
   returnEquipment,
+} from '../services/equipmentAssignmentsService'
+import {
+  deleteEquipmentAttachment,
   uploadEquipmentAttachment,
-} from '../services/equipmentService'
-import type { EquipmentLifeSheet } from '@/shared/types/inventory'
+} from '../services/equipmentAttachmentsService'
+import {
+  createFailureReport,
+  resolveFailureReport,
+} from '../services/equipmentFailureService'
+import { createMaintenanceRecord } from '../services/equipmentMaintenanceService'
+import type { EquipmentLifeSheet } from '../types/equipmentLifeSheet'
 
 type EquipmentOperationDependencies = {
   lifeSheet: EquipmentLifeSheet | null

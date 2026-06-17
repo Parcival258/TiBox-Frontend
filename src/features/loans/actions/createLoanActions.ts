@@ -9,7 +9,7 @@ import type {
   CreateEquipmentLoanPayload,
   RequestEquipmentLoanPayload,
   ReturnEquipmentLoanPayload,
-} from '@/shared/types/inventory'
+} from '../types'
 
 type LoanActionDependencies = {
   refreshEquipmentLoans: () => Promise<unknown>

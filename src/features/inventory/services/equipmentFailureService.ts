@@ -1,5 +1,5 @@
 import { patchJson, postJson } from '@/shared/services/api'
-import type { CreateFailureReportPayload, FailureReport } from '@/shared/types/inventory'
+import type { CreateFailureReportPayload, FailureReport } from '../types/equipmentFailures'
 
 export function createFailureReport(payload: CreateFailureReportPayload) {
   return postJson<FailureReport>('/api/v1/failure-reports', payload)

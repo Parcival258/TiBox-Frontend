@@ -1,5 +1,5 @@
 import type { MouseEvent } from 'react'
-import type { Equipment } from '@/shared/types/inventory'
+import type { Equipment } from '../types/equipmentCore'
 import {
   type ContextMenuState,
 } from '@/shared/ui/contextActionMenu/ContextActionMenu'

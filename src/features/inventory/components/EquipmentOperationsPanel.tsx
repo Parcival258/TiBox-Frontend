@@ -1,7 +1,12 @@
-import { useId, useMemo, useState, type FormEvent, type ReactNode } from 'react'
-import type { EquipmentCatalogs, EquipmentLifeSheet } from '@/shared/types/inventory'
-import { DateInput } from '@/shared/ui/DateInput'
+import { useState, type FormEvent } from 'react'
+import type { EquipmentCatalogs } from '../types/equipmentCatalogs'
+import type { EquipmentLifeSheet } from '../types/equipmentLifeSheet'
 import { SuccessNotice } from '@/shared/ui/SuccessNotice'
+import { AssignmentOperationForm } from './operations/AssignmentOperationForm'
+import { AttachmentOperationForm } from './operations/AttachmentOperationForm'
+import { FailureOperationForm } from './operations/FailureOperationForm'
+import { MaintenanceOperationForm } from './operations/MaintenanceOperationForm'
+import { ReturnOperationForm } from './operations/ReturnOperationForm'
 
 type EquipmentOperationsPanelProps = {
   canAssign: boolean
@@ -29,16 +34,6 @@ type EquipmentOperationsPanelProps = {
 }
 
 type SubmitState = 'idle' | 'submitting' | 'error' | 'success'
-
-type SelectOption = {
-  label: string
-  searchText?: string
-  value: string
-}
-
-function responsibleSearchText(responsible: { email?: string; jobTitle?: string | null; name: string }) {
-  return [responsible.name, responsible.email, responsible.jobTitle].filter(Boolean).join(' ')
-}
 
 export function EquipmentOperationsPanel({
   canAssign,
@@ -194,320 +189,76 @@ export function EquipmentOperationsPanel({
       )}
 
       {canAssign && (
-        <OperationSection title="Asignar equipo">
-          <form className="space-y-3" onSubmit={handleAssign}>
-            <Select
-              disabled={disabled || submitState === 'submitting'}
-              label="Responsable"
-              value={assignUserId}
-              onChange={setAssignUserId}
-              options={(catalogs?.responsibles ?? []).map((responsible) => ({
-                label: responsible.name,
-                value: responsible.id,
-              }))}
-            />
-            <Textarea label="Nota" value={assignNotes} onChange={setAssignNotes} />
-            <SubmitButton disabled={disabled || !assignUserId || submitState === 'submitting'}>
-              Asignar
-            </SubmitButton>
-          </form>
-        </OperationSection>
+        <AssignmentOperationForm
+          assignNotes={assignNotes}
+          assignUserId={assignUserId}
+          catalogs={catalogs}
+          disabled={disabled}
+          isSubmitting={submitState === 'submitting'}
+          onAssignNotesChange={setAssignNotes}
+          onAssignUserIdChange={setAssignUserId}
+          onSubmit={handleAssign}
+        />
       )}
 
       {canReturn && (
-        <OperationSection title="Devolver equipo">
-          <form className="space-y-3" onSubmit={handleReturn}>
-            <Textarea label="Nota de devolucion" value={returnNotes} onChange={setReturnNotes} />
-            <SubmitButton disabled={disabled || submitState === 'submitting'}>Registrar devolucion</SubmitButton>
-          </form>
-        </OperationSection>
+        <ReturnOperationForm
+          disabled={disabled}
+          isSubmitting={submitState === 'submitting'}
+          returnNotes={returnNotes}
+          onReturnNotesChange={setReturnNotes}
+          onSubmit={handleReturn}
+        />
       )}
 
       {canCreateFailure && (
-        <OperationSection title="Reportar falla">
-          <form className="space-y-3" onSubmit={handleFailure}>
-            <Input label="Titulo" value={failureTitle} onChange={setFailureTitle} />
-            <Textarea label="Descripcion" value={failureDescription} onChange={setFailureDescription} />
-            <Select
-              label="Prioridad"
-              value={failurePriority}
-              onChange={setFailurePriority}
-              options={priorityOptions}
-            />
-            <SubmitButton
-              disabled={disabled || !failureTitle || !failureDescription || submitState === 'submitting'}
-            >
-              Crear falla
-            </SubmitButton>
-          </form>
-        </OperationSection>
+        <FailureOperationForm
+          disabled={disabled}
+          failureDescription={failureDescription}
+          failurePriority={failurePriority}
+          failureTitle={failureTitle}
+          isSubmitting={submitState === 'submitting'}
+          onFailureDescriptionChange={setFailureDescription}
+          onFailurePriorityChange={setFailurePriority}
+          onFailureTitleChange={setFailureTitle}
+          onSubmit={handleFailure}
+        />
       )}
 
       {canCreateMaintenance && (
-        <OperationSection title="Registrar mantenimiento">
-          <form className="space-y-3" onSubmit={handleMaintenance}>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Select
-                label="Tipo"
-                value={maintenanceType}
-                onChange={(value) => setMaintenanceType(value as 'preventive' | 'corrective')}
-                options={[
-                  { label: 'Preventivo', value: 'preventive' },
-                  { label: 'Correctivo', value: 'corrective' },
-                ]}
-              />
-              <Select
-                label="Prioridad"
-                value={maintenancePriority}
-                onChange={setMaintenancePriority}
-                options={priorityOptions}
-              />
-            </div>
-            <SearchableSelect
-              disabled={disabled || submitState === 'submitting'}
-              label="Tecnico"
-              placeholder="Buscar tecnico"
-              value={maintenanceTechnicianId}
-              onChange={setMaintenanceTechnicianId}
-              options={(catalogs?.responsibles ?? []).map((responsible) => ({
-                label: responsible.name,
-                searchText: responsibleSearchText(responsible),
-                value: responsible.id,
-              }))}
-            />
-            <Textarea label="Descripcion" value={maintenanceDescription} onChange={setMaintenanceDescription} />
-            <Textarea label="Diagnostico" value={maintenanceDiagnosis} onChange={setMaintenanceDiagnosis} />
-            <Textarea label="Acciones realizadas" value={maintenanceActions} onChange={setMaintenanceActions} />
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Input label="Costo" type="number" value={maintenanceCost} onChange={setMaintenanceCost} />
-              <Input
-                label="Proximo mantenimiento"
-                type="date"
-                value={nextMaintenanceAt}
-                onChange={setNextMaintenanceAt}
-              />
-            </div>
-            <SubmitButton disabled={disabled || submitState === 'submitting'}>Guardar mantenimiento</SubmitButton>
-          </form>
-        </OperationSection>
+        <MaintenanceOperationForm
+          catalogs={catalogs}
+          disabled={disabled}
+          isSubmitting={submitState === 'submitting'}
+          maintenanceActions={maintenanceActions}
+          maintenanceCost={maintenanceCost}
+          maintenanceDescription={maintenanceDescription}
+          maintenanceDiagnosis={maintenanceDiagnosis}
+          maintenancePriority={maintenancePriority}
+          maintenanceTechnicianId={maintenanceTechnicianId}
+          maintenanceType={maintenanceType}
+          nextMaintenanceAt={nextMaintenanceAt}
+          onMaintenanceActionsChange={setMaintenanceActions}
+          onMaintenanceCostChange={setMaintenanceCost}
+          onMaintenanceDescriptionChange={setMaintenanceDescription}
+          onMaintenanceDiagnosisChange={setMaintenanceDiagnosis}
+          onMaintenancePriorityChange={setMaintenancePriority}
+          onMaintenanceTechnicianIdChange={setMaintenanceTechnicianId}
+          onMaintenanceTypeChange={setMaintenanceType}
+          onNextMaintenanceAtChange={setNextMaintenanceAt}
+          onSubmit={handleMaintenance}
+        />
       )}
 
       {canUploadAttachment && (
-        <OperationSection title="Adjuntar archivo">
-          <form className="space-y-3" onSubmit={handleAttachment}>
-            <input
-              className="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-300 file:mr-3 file:rounded-md file:border-0 file:bg-cyan-900 file:px-3 file:py-1.5 file:text-cyan-100"
-              type="file"
-              onChange={(event) => setAttachment(event.target.files?.[0] ?? null)}
-            />
-            <SubmitButton disabled={disabled || !attachment || submitState === 'submitting'}>Subir adjunto</SubmitButton>
-          </form>
-        </OperationSection>
+        <AttachmentOperationForm
+          attachment={attachment}
+          disabled={disabled}
+          isSubmitting={submitState === 'submitting'}
+          onAttachmentChange={setAttachment}
+          onSubmit={handleAttachment}
+        />
       )}
     </aside>
-  )
-}
-
-const priorityOptions = [
-  { label: 'Baja', value: 'low' },
-  { label: 'Media', value: 'medium' },
-  { label: 'Alta', value: 'high' },
-  { label: 'Critica', value: 'critical' },
-]
-
-function OperationSection({ children, title }: { children: ReactNode; title: string }) {
-  return (
-    <section className="border-t border-slate-800 pt-4">
-      <h3 className="text-sm font-semibold text-white">{title}</h3>
-      <div className="mt-3">{children}</div>
-    </section>
-  )
-}
-
-function Input({
-  label,
-  onChange,
-  type = 'text',
-  value,
-}: {
-  label: string
-  onChange: (value: string) => void
-  type?: string
-  value: string
-}) {
-  if (type === 'date') {
-    return <DateInput label={label} value={value} onChange={onChange} />
-  }
-
-  return (
-    <label className="block text-sm">
-      <span className="text-slate-500">{label}</span>
-      <input
-        className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-200 outline-none transition focus:border-cyan-500"
-        type={type}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-      />
-    </label>
-  )
-}
-
-function Select({
-  disabled,
-  label,
-  onChange,
-  options,
-  value,
-}: {
-  disabled?: boolean
-  label: string
-  onChange: (value: string) => void
-  options: Array<{ label: string; value: string }>
-  value: string
-}) {
-  return (
-    <label className="block text-sm">
-      <span className="text-slate-500">{label}</span>
-      <select
-        className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-200 outline-none transition focus:border-cyan-500 disabled:opacity-60"
-        disabled={disabled}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-      >
-        <option value="">Seleccionar</option>
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-    </label>
-  )
-}
-
-function SearchableSelect({
-  disabled,
-  label,
-  onChange,
-  options,
-  placeholder,
-  value,
-}: {
-  disabled?: boolean
-  label: string
-  onChange: (value: string) => void
-  options: SelectOption[]
-  placeholder?: string
-  value: string
-}) {
-  const inputId = useId()
-  const selectedOption = options.find((option) => option.value === value)
-  const [query, setQuery] = useState(selectedOption?.label ?? '')
-  const [isOpen, setIsOpen] = useState(false)
-
-  const filteredOptions = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase()
-
-    if (!normalizedQuery || selectedOption?.label === query) {
-      return options.slice(0, 20)
-    }
-
-    return options
-      .filter((option) => `${option.label} ${option.searchText ?? ''}`.toLowerCase().includes(normalizedQuery))
-      .slice(0, 20)
-  }, [options, query, selectedOption?.label])
-
-  function selectOption(option: SelectOption) {
-    onChange(option.value)
-    setQuery(option.label)
-    setIsOpen(false)
-  }
-
-  function handleQueryChange(nextQuery: string) {
-    setQuery(nextQuery)
-    setIsOpen(true)
-
-    if (value) {
-      onChange('')
-    }
-  }
-
-  return (
-    <div
-      className="relative text-sm"
-      onBlur={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget)) {
-          setIsOpen(false)
-          setQuery(selectedOption?.label ?? '')
-        }
-      }}
-    >
-      <label className="text-slate-500" htmlFor={inputId}>
-        {label}
-      </label>
-      <input
-        autoComplete="off"
-        className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-200 outline-none transition placeholder:text-slate-600 focus:border-cyan-500 disabled:opacity-60"
-        disabled={disabled}
-        id={inputId}
-        placeholder={placeholder}
-        type="text"
-        value={query}
-        onChange={(event) => handleQueryChange(event.target.value)}
-        onFocus={() => setIsOpen(true)}
-      />
-      {isOpen && !disabled && (
-        <div className="absolute z-20 mt-1 max-h-56 w-full overflow-y-auto rounded-md border border-slate-700 bg-slate-950 shadow-xl">
-          {filteredOptions.length > 0 ? (
-            filteredOptions.map((option) => (
-              <button
-                className="block w-full px-3 py-2 text-left text-sm text-slate-200 transition hover:bg-slate-800 focus:bg-slate-800 focus:outline-none"
-                key={option.value}
-                type="button"
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={() => selectOption(option)}
-              >
-                {option.label}
-              </button>
-            ))
-          ) : (
-            <p className="px-3 py-2 text-sm text-slate-500">Sin resultados</p>
-          )}
-        </div>
-      )}
-    </div>
-  )
-}
-
-function Textarea({
-  label,
-  onChange,
-  value,
-}: {
-  label: string
-  onChange: (value: string) => void
-  value: string
-}) {
-  return (
-    <label className="block text-sm">
-      <span className="text-slate-500">{label}</span>
-      <textarea
-        className="mt-1 min-h-20 w-full resize-y rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-200 outline-none transition focus:border-cyan-500"
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-      />
-    </label>
-  )
-}
-
-function SubmitButton({ children, disabled }: { children: ReactNode; disabled?: boolean }) {
-  return (
-    <button
-      className="rounded-md border border-cyan-700 px-3 py-2 text-sm font-medium text-cyan-100 transition hover:border-cyan-400 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
-      disabled={disabled}
-      type="submit"
-    >
-      {children}
-    </button>
   )
 }

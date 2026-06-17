@@ -1,5 +1,5 @@
 import { getJson, postJson } from '@/shared/services/api'
-import type { User } from '@/shared/types/inventory'
+import type { User } from '@/features/users/types'
 
 type AuthResponse = {
   user: User

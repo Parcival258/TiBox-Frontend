@@ -1,5 +1,5 @@
 import { AppLoader } from '@/shared/ui/Loaders'
-import type { EquipmentLifeSheet } from '@/shared/types/inventory'
+import type { EquipmentLifeSheet } from '../../types/equipmentLifeSheet'
 import { equipmentStatusLabel, ownershipTypeLabel } from '@/shared/utils/enumLabels'
 
 type EquipmentSummaryPanelProps = {

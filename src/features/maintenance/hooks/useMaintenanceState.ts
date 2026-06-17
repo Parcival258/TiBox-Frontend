@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { MaintenanceSchedule, MaintenanceScheduleCatalogs } from '@/shared/types/inventory'
+import type { MaintenanceSchedule, MaintenanceScheduleCatalogs } from '../types'
 import type { ModuleState } from '@/shared/types/ui'
 
 export function useMaintenanceState() {

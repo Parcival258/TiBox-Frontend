@@ -1,4 +1,4 @@
-import type { Alert } from '@/shared/types/inventory'
+import type { Alert } from '@/features/alerts/types'
 
 export function alertMetrics({
   alerts,
