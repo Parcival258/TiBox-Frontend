@@ -53,6 +53,7 @@ type InventoryPageProps = {
   onExportEquipment: () => Promise<void>
   onImportEquipment: (file: File) => Promise<EquipmentImportResult>
   onOpenEquipmentDetails: (equipmentId: string) => Promise<void>
+  onRestoreEquipment: (equipmentId: string) => void
   onResolveFailure: (failureReportId: string) => Promise<void>
   onReturnEquipment: (notes?: string) => Promise<void>
   onSelectEquipment: (equipmentId: string) => void
@@ -87,6 +88,7 @@ export function InventoryPage({
   onExportEquipment,
   onImportEquipment,
   onOpenEquipmentDetails,
+  onRestoreEquipment,
   onResolveFailure,
   onReturnEquipment,
   onSelectEquipment,
@@ -142,6 +144,7 @@ export function InventoryPage({
           setIsDetailViewOpen(true)
           onOpenEquipmentDetails(equipmentId)
         }}
+        onRestoreEquipment={onRestoreEquipment}
         onSelectEquipment={onSelectEquipment}
       />
       <div className="space-y-6">

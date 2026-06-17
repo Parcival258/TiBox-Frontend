@@ -68,6 +68,14 @@ export function AppView({
           onExportEquipment={actions.handleExportEquipment}
           onImportEquipment={actions.handleImportEquipment}
           onOpenEquipmentDetails={actions.openEquipmentDetails}
+          onRestoreEquipment={(equipmentId) =>
+            requestConfirmation({
+              confirmLabel: 'Reintegrar equipo',
+              message: 'El equipo volvera al inventario activo con estado Activo.',
+              onConfirm: () => actions.handleRestoreEquipment(equipmentId),
+              title: 'Confirmar reintegro',
+            })
+          }
           onResolveFailure={actions.resolveFailure}
           onReturnEquipment={actions.returnEquipment}
           onSelectEquipment={actions.handleSelectEquipment}

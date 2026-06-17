@@ -9,6 +9,10 @@ export function updateEquipment(equipmentId: string, payload: Partial<EquipmentP
   return patchJson<Equipment>(`/api/v1/equipment/${equipmentId}`, payload)
 }
 
+export function restoreEquipment(equipmentId: string) {
+  return patchJson<Equipment>(`/api/v1/equipment/${equipmentId}/restore`)
+}
+
 export function deleteEquipment(equipmentId: string) {
   return deleteJson(`/api/v1/equipment/${equipmentId}`)
 }

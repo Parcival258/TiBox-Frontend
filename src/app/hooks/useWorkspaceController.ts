@@ -245,6 +245,7 @@ export function useWorkspaceController({
       handleExportEquipment: inventoryWorkspaceActions.handleExportEquipment,
       handleFinishSchedule: maintenanceActions.handleFinishSchedule,
       handleImportEquipment: inventoryWorkspaceActions.handleImportEquipment,
+      handleRestoreEquipment: inventoryWorkspaceActions.handleRestoreEquipment,
       handleRunAlertChecks: alertActions.handleRunAlertChecks,
       handleScheduleAction: maintenanceActions.handleScheduleAction,
       handleSelectEquipment: inventoryWorkspaceActions.handleSelectEquipment,

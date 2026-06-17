@@ -1,6 +1,7 @@
 import {
   createEquipment,
   deleteEquipment,
+  restoreEquipment,
   updateEquipment,
 } from '../services/equipmentMutations'
 import { getEquipment, getEquipmentLifeSheet } from '../services/equipmentQuery'
@@ -153,6 +154,23 @@ export function createInventoryWorkspaceActions({
       .catch(() => setStatus('error'))
   }
 
+  function handleRestoreEquipment(equipmentId: string) {
+    return restoreEquipment(equipmentId)
+      .then(async () => {
+        setSelectedEquipmentId(equipmentId)
+        await refreshCoreData()
+        await refreshSelectedLifeSheet(equipmentId)
+        showSuccess('Equipo reintegrado', 'El equipo vuelve a estar activo en el inventario.')
+        if (canViewMaintenance) {
+          refreshMaintenanceSchedules()
+        }
+        if (canViewAlerts) {
+          refreshAlerts()
+        }
+      })
+      .catch(() => setStatus('error'))
+  }
+
   function handleChangeEquipmentFilters(filters: EquipmentFilters) {
     const nextFilters = {
       ...defaultEquipmentFilters,
@@ -222,6 +240,7 @@ export function createInventoryWorkspaceActions({
     handleDownloadEquipmentImportTemplate,
     handleExportEquipment,
     handleImportEquipment,
+    handleRestoreEquipment,
     handleSelectEquipment,
     handleSubmitEquipment,
     openCreateEquipment,

@@ -32,6 +32,7 @@ type EquipmentTableProps = {
   onExportEquipment: () => Promise<void>
   onImportEquipment: (file: File) => Promise<EquipmentImportResult>
   onOpenEquipmentDetails: (equipmentId: string) => void
+  onRestoreEquipment: (equipmentId: string) => void
   onSelectEquipment: (equipmentId: string) => void
   pagination: PaginationMeta | null
   selectedEquipmentId: string | null
@@ -83,6 +84,7 @@ export function EquipmentTable({
   onExportEquipment,
   onImportEquipment,
   onOpenEquipmentDetails,
+  onRestoreEquipment,
   onSelectEquipment,
   pagination,
   selectedEquipmentId,
@@ -198,6 +200,7 @@ export function EquipmentTable({
         onDeleteEquipment={onDeleteEquipment}
         onEditEquipment={onEditEquipment}
         onOpenEquipmentDetails={onOpenEquipmentDetails}
+        onRestoreEquipment={onRestoreEquipment}
         onSelectEquipment={onSelectEquipment}
         onSetContextMenu={setContextMenu}
       />

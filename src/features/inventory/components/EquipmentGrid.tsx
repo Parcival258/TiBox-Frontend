@@ -13,6 +13,7 @@ type EquipmentGridProps = {
   onDeleteEquipment: (equipmentId: string) => void
   onEditEquipment: (equipment: Equipment) => void
   onOpenEquipmentDetails: (equipmentId: string) => void
+  onRestoreEquipment: (equipmentId: string) => void
   onSelectEquipment: (equipmentId: string) => void
   onSetContextMenu: (menu: ContextMenuState) => void
 }
@@ -25,6 +26,7 @@ export function EquipmentGrid({
   onDeleteEquipment,
   onEditEquipment,
   onOpenEquipmentDetails,
+  onRestoreEquipment,
   onSelectEquipment,
   onSetContextMenu,
 }: EquipmentGridProps) {
@@ -72,6 +74,7 @@ export function EquipmentGrid({
               onDeleteEquipment={onDeleteEquipment}
               onEditEquipment={onEditEquipment}
               onOpenEquipmentDetails={onOpenEquipmentDetails}
+              onRestoreEquipment={onRestoreEquipment}
               onSelectEquipment={onSelectEquipment}
               onSetContextMenu={onSetContextMenu}
             />
@@ -90,6 +93,7 @@ function EquipmentGridRow({
   onDeleteEquipment,
   onEditEquipment,
   onOpenEquipmentDetails,
+  onRestoreEquipment,
   onSelectEquipment,
   onSetContextMenu,
 }: {
@@ -100,6 +104,7 @@ function EquipmentGridRow({
   onDeleteEquipment: (equipmentId: string) => void
   onEditEquipment: (equipment: Equipment) => void
   onOpenEquipmentDetails: (equipmentId: string) => void
+  onRestoreEquipment: (equipmentId: string) => void
   onSelectEquipment: (equipmentId: string) => void
   onSetContextMenu: (menu: ContextMenuState) => void
 }) {
@@ -134,6 +139,17 @@ function EquipmentGridRow({
                 onSelect: () => onDeleteEquipment(equipment.id),
                 separatorBefore: true,
                 tone: 'danger' as const,
+              },
+            ]
+          : []),
+        ...(canUpdate && isRetired
+          ? [
+              {
+                icon: 'check' as const,
+                label: 'Reintegrar',
+                onSelect: () => onRestoreEquipment(equipment.id),
+                separatorBefore: true,
+                tone: 'success' as const,
               },
             ]
           : []),
