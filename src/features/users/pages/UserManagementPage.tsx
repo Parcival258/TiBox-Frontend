@@ -114,15 +114,15 @@ export function UserManagementPage({ currentUserId }: UserManagementPageProps) {
     const payload = userFormToPayload(form)
 
     try {
-      const savedUser = editingUser
-        ? await updateUser(editingUser.id, payload)
-        : await createUser(payload as UserPayload & { password: string })
-
-      setUsers((current) =>
-        editingUser
-          ? current.map((user) => (user.id === savedUser.id ? savedUser : user))
-          : [...current, savedUser].sort((a, b) => a.name.localeCompare(b.name))
-      )
+      if (editingUser) {
+        const savedUser = await updateUser(editingUser.id, payload)
+        setUsers((current) =>
+          current.map((user) => (user.id === savedUser.id ? savedUser : user))
+        )
+      } else {
+        await createUser(payload as UserPayload & { password: string })
+        setUsers(await getUsers())
+      }
       closeForm()
     } catch {
       setSubmitState('error')

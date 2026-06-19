@@ -1,10 +1,11 @@
 import { io, type Socket } from 'socket.io-client'
 import { postJson } from '@/shared/services/api'
-
+//revisar esta importacion ya que no estoy seguro de que funcione asi
+const apiUrl = (import.meta.env.VITE_API_URL)
 const realtimeUrl = (
   import.meta.env.VITE_WS_URL ??
   import.meta.env.VITE_API_URL ??
-  'http://localhost:3333'
+  apiUrl
 ).replace(/\/$/, '')
 
 type RealtimeTokenResponse = {

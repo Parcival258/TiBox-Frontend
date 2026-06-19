@@ -521,6 +521,58 @@ html[data-theme='light'] .cir-rail__avatar {
   color: #0e7490;
 }
 
+@media (max-width: 1023px) {
+  .app-sidebar {
+    position: relative;
+    z-index: 20;
+  }
+
+  .cir-rail {
+    max-height: none;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 18px;
+  }
+
+  .cir-rail--collapsed {
+    align-items: stretch;
+  }
+
+  .cir-rail--collapsed .cir-rail__head {
+    justify-content: space-between;
+  }
+
+  .cir-rail--collapsed .cir-rail__title {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    padding: 0 0 0 8px;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+  }
+
+  .cir-rail--collapsed .cir-rail__nav,
+  .cir-rail--collapsed .cir-rail__footer {
+    display: none;
+  }
+
+  .cir-rail__nav {
+    max-height: min(60vh, 32rem);
+  }
+
+  .cir-rail__footer {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .cir-rail__logout {
+    width: 100%;
+  }
+}
+
 @media (min-width: 1024px) {
   .app-sidebar {
     position: sticky;

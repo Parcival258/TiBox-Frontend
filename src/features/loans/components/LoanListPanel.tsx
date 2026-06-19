@@ -39,7 +39,7 @@ export function LoanListPanel({
             {activeLoans.length} activos / {overdueCount} vencidos
           </p>
         </div>
-        <div className="grid grid-cols-4 gap-2 text-center text-sm">
+        <div className="grid grid-cols-2 gap-2 text-center text-sm min-[480px]:grid-cols-4">
           <LoanMetric label="Solicitudes" value={requestedCount} />
           <LoanMetric label="Activos" value={activeLoans.length} />
           <LoanMetric label="Vencidos" value={overdueCount} />

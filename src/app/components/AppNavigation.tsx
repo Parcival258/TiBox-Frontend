@@ -26,7 +26,11 @@ export function AppNavigation({
   userName,
   onLogout,
 }: AppNavigationProps) {
-  const [sidebarState, setSidebarState] = useState<SidebarState>('expanded')
+  const [sidebarState, setSidebarState] = useState<SidebarState>(() =>
+    typeof window !== 'undefined' && window.matchMedia('(max-width: 1023px)').matches
+      ? 'collapsed'
+      : 'expanded'
+  )
   const isCollapsed = sidebarState === 'collapsed'
 
   return (
@@ -37,9 +41,10 @@ export function AppNavigation({
             <p>TIBOX</p>
           </div>
           <button
-            aria-label={isCollapsed ? 'Expandir menu lateral' : 'Contraer menu lateral'}
+            aria-expanded={!isCollapsed}
+            aria-label={isCollapsed ? 'Abrir menu principal' : 'Cerrar menu principal'}
             className="cir-rail__b cir-rail__b--toggle"
-            title={isCollapsed ? 'Expandir menu lateral' : 'Contraer menu lateral'}
+            title={isCollapsed ? 'Abrir menu principal' : 'Cerrar menu principal'}
             type="button"
             onClick={() => setSidebarState(isCollapsed ? 'expanded' : 'collapsed')}
           >

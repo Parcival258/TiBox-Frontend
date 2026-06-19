@@ -105,7 +105,7 @@ function MaintenanceScheduleFormContent({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/80 px-4 py-8">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/80 px-2 py-3 sm:px-4 sm:py-8">
       <form
         className="w-full max-w-3xl rounded-lg border border-slate-800 bg-slate-900 shadow-2xl"
         onSubmit={handleSubmit}

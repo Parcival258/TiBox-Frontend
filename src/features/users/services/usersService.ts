@@ -17,12 +17,35 @@ type SerializedUserResponse = {
   data: UserResponse
 }
 
+type SerializedUser = {
+  data: User
+}
+
 function unwrapUsers(response: UsersResponse | SerializedUsersResponse) {
   return 'data' in response ? response.data.users : response.users
 }
 
-function unwrapUser(response: UserResponse | SerializedUserResponse) {
-  return 'data' in response ? response.data.user : response.user
+function isUser(value: unknown): value is User {
+  if (!value || typeof value !== 'object') {
+    return false
+  }
+
+  const candidate = value as Partial<User>
+  return typeof candidate.id === 'string' &&
+    typeof candidate.name === 'string' &&
+    typeof candidate.email === 'string'
+}
+
+export function unwrapUser(response: UserResponse | SerializedUserResponse | SerializedUser) {
+  const candidate = 'data' in response
+    ? ('user' in response.data ? response.data.user : response.data)
+    : response.user
+
+  if (!isUser(candidate)) {
+    throw new Error('La respuesta del usuario no tiene el formato esperado')
+  }
+
+  return candidate
 }
 
 export function getUsers() {
@@ -34,11 +57,11 @@ export function getUserRoles() {
 }
 
 export function createUser(payload: UserPayload & { password: string }) {
-  return postJson<UserResponse | SerializedUserResponse>('/api/v1/users', payload).then(unwrapUser)
+  return postJson<UserResponse | SerializedUserResponse | SerializedUser>('/api/v1/users', payload).then(unwrapUser)
 }
 
 export function updateUser(userId: string, payload: UserPayload) {
-  return patchJson<UserResponse | SerializedUserResponse>(`/api/v1/users/${userId}`, payload).then(unwrapUser)
+  return patchJson<UserResponse | SerializedUserResponse | SerializedUser>(`/api/v1/users/${userId}`, payload).then(unwrapUser)
 }
 
 export function deleteUser(userId: string) {

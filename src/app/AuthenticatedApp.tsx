@@ -57,8 +57,9 @@ export function AuthenticatedApp({ authStatus, onLogout, user }: AuthenticatedAp
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100">
-      <div className="app-shell flex min-h-screen w-full flex-col gap-6 px-4 py-6 sm:px-6 lg:flex-row xl:px-8">
+      <div className="app-shell flex min-h-screen w-full flex-col gap-4 px-3 py-3 sm:gap-6 sm:px-6 sm:py-6 lg:flex-row xl:px-8">
         <AppNavigation
+          key={location.pathname}
           alertAttentionCount={metrics.alertAttentionCount}
           canManageUsers={permissions.canManageUsers}
           canViewAlerts={permissions.canViewAlerts}
