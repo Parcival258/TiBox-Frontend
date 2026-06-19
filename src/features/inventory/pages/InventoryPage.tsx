@@ -11,7 +11,7 @@ import type { EquipmentCatalogs } from '../types/equipmentCatalogs'
 import type { EquipmentLifeSheet as EquipmentLifeSheetType } from '../types/equipmentLifeSheet'
 import type { Headquarter } from '@/features/settings/types'
 import type { PaginationMeta } from '@/shared/types/pagination'
-import type { LifeSheetState } from '@/shared/types/ui'
+import type { LifeSheetState, LoadState } from '@/shared/types/ui'
 import type { EquipmentImportResult } from '@/features/inventory/utils/equipmentBulkImport'
 
 type InventoryPageProps = {
@@ -32,6 +32,7 @@ type InventoryPageProps = {
   lifeSheetStatus: LifeSheetState
   pagination: PaginationMeta | null
   selectedEquipmentId: string | null
+  status: LoadState
   onAssignEquipment: (userId: string, notes?: string) => Promise<void>
   onChangeFilters: (filters: EquipmentFilters) => void
   onCreateEquipment: () => void
@@ -95,6 +96,7 @@ export function InventoryPage({
   onUploadAttachment,
   pagination,
   selectedEquipmentId,
+  status,
 }: InventoryPageProps) {
   const [isDetailViewOpen, setIsDetailViewOpen] = useState(false)
 
@@ -133,6 +135,7 @@ export function InventoryPage({
         filters={filters}
         pagination={pagination}
         selectedEquipmentId={selectedEquipmentId}
+        status={status}
         onChangeFilters={onChangeFilters}
         onCreateEquipment={onCreateEquipment}
         onDeleteEquipment={onDeleteEquipment}

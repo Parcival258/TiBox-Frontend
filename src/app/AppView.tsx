@@ -49,6 +49,7 @@ export function AppView({
           lifeSheetStatus={state.lifeSheetStatus}
           pagination={state.equipmentMeta}
           selectedEquipmentId={state.selectedEquipmentId}
+          status={state.status}
           onAssignEquipment={actions.assignEquipment}
           onChangeFilters={actions.handleChangeEquipmentFilters}
           onCreateEquipment={actions.openCreateEquipment}

@@ -5,7 +5,6 @@ import type { AuthState } from '@/shared/types/ui'
 
 export function useSession() {
   const [status, setStatus] = useState<AuthState>('checking')
-  const [showLogin, setShowLogin] = useState(false)
   const [user, setUser] = useState<User | null>(null)
   const [loginError, setLoginError] = useState<string | null>(null)
 
@@ -36,15 +35,12 @@ export function useSession() {
   function signOut() {
     return logout().finally(() => {
       setUser(null)
-      setShowLogin(false)
       setStatus('guest')
     })
   }
 
   return {
     loginError,
-    openLogin: () => setShowLogin(true),
-    showLogin,
     signIn,
     signOut,
     status,

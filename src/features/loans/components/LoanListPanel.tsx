@@ -1,4 +1,5 @@
 import type { ModuleState } from '@/shared/types/ui'
+import { AppLoader } from '@/shared/ui/Loaders'
 import { formatDate } from '@/shared/utils/dateFormat'
 import type { EquipmentLoan } from '../types'
 import { equipmentLabel, loanStatusStyles } from '../utils/loanDisplay'
@@ -47,7 +48,9 @@ export function LoanListPanel({
       </div>
 
       {status === 'loading' ? (
-        <div className="px-4 py-12 text-center text-sm text-slate-400">Cargando prestamos...</div>
+        <div className="flex min-h-72 items-center justify-center px-4 py-12">
+          <AppLoader label="Cargando préstamos..." />
+        </div>
       ) : status === 'error' ? (
         <div className="px-4 py-12 text-center text-sm text-red-200">
           No fue posible cargar los prestamos.

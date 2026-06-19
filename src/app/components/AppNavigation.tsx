@@ -1,11 +1,10 @@
 import { useState } from 'react'
-import type { ActiveView } from '@/shared/types/ui'
+import { VIEW_PATHS } from '../routes'
 import { AppNavigationButton, AppNavigationGroup } from './AppNavigationItems'
 import { NavigationIcon } from './navigationIcons'
 import './AppNavigation.css'
 
 type AppNavigationProps = {
-  activeView: ActiveView
   alertAttentionCount: number
   canViewAlerts: boolean
   canViewMaintenance: boolean
@@ -13,16 +12,11 @@ type AppNavigationProps = {
   canManageUsers: boolean
   myCaseCount: number
   userName: string
-  onChangeView: (view: ActiveView) => void
   onLogout: () => void
 }
 
 type SidebarState = 'expanded' | 'collapsed'
-type ViewTransitionDocument = Document & {
-  startViewTransition?: (update: () => void) => void
-}
 export function AppNavigation({
-  activeView,
   alertAttentionCount,
   canViewAlerts,
   canViewMaintenance,
@@ -30,27 +24,10 @@ export function AppNavigation({
   canManageUsers,
   myCaseCount,
   userName,
-  onChangeView,
   onLogout,
 }: AppNavigationProps) {
   const [sidebarState, setSidebarState] = useState<SidebarState>('expanded')
   const isCollapsed = sidebarState === 'collapsed'
-
-  function changeView(view: ActiveView) {
-    if (view === activeView) {
-      return
-    }
-
-    const viewTransitionDocument = document as ViewTransitionDocument
-    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-
-    if (viewTransitionDocument.startViewTransition && !reduceMotion) {
-      viewTransitionDocument.startViewTransition(() => onChangeView(view))
-      return
-    }
-
-    onChangeView(view)
-  }
 
   return (
     <aside className={isCollapsed ? 'app-sidebar app-sidebar--collapsed' : 'app-sidebar'}>
@@ -73,26 +50,23 @@ export function AppNavigation({
         <nav className="cir-rail__nav" aria-label="Navegacion principal">
           <AppNavigationGroup isCollapsed={isCollapsed} title="Operacion">
             <AppNavigationButton
-              active={activeView === 'inventory'}
               icon="inventory"
               isCollapsed={isCollapsed}
               label="Inventario"
-              onClick={() => changeView('inventory')}
+              to={VIEW_PATHS.inventory}
             />
             <AppNavigationButton
-              active={activeView === 'loans'}
               icon="loans"
               isCollapsed={isCollapsed}
               label="Prestamos"
-              onClick={() => changeView('loans')}
+              to={VIEW_PATHS.loans}
             />
             {canViewMaintenance && (
               <AppNavigationButton
-                active={activeView === 'maintenance'}
                 icon="calendar"
                 isCollapsed={isCollapsed}
                 label="Cronograma"
-                onClick={() => changeView('maintenance')}
+                to={VIEW_PATHS.maintenance}
               />
             )}
           </AppNavigationGroup>
@@ -100,20 +74,18 @@ export function AppNavigation({
           {canViewAlerts && (
             <AppNavigationGroup isCollapsed={isCollapsed} title="Soporte">
               <AppNavigationButton
-                active={activeView === 'cases'}
                 badge={myCaseCount}
                 icon="cases"
                 isCollapsed={isCollapsed}
                 label="Mis casos"
-                onClick={() => changeView('cases')}
+                to={VIEW_PATHS.cases}
               />
               <AppNavigationButton
-                active={activeView === 'alerts'}
                 badge={alertAttentionCount}
                 icon="alerts"
                 isCollapsed={isCollapsed}
                 label="Alertas"
-                onClick={() => changeView('alerts')}
+                to={VIEW_PATHS.alerts}
               />
             </AppNavigationGroup>
           )}
@@ -121,28 +93,25 @@ export function AppNavigation({
           <AppNavigationGroup isCollapsed={isCollapsed} title="Administracion">
               {canManageUsers && (
                 <AppNavigationButton
-                  active={activeView === 'users'}
                   icon="users"
                   isCollapsed={isCollapsed}
                   label="Usuarios"
-                  onClick={() => changeView('users')}
+                  to={VIEW_PATHS.users}
                 />
               )}
               {canViewSettings && (
                 <AppNavigationButton
-                  active={activeView === 'headquarters'}
                   icon="building"
                   isCollapsed={isCollapsed}
                   label="Sedes y Tipos"
-                  onClick={() => changeView('headquarters')}
+                  to={VIEW_PATHS.headquarters}
                 />
               )}
               <AppNavigationButton
-                active={activeView === 'settings'}
                 icon="settings"
                 isCollapsed={isCollapsed}
                 label="Configuracion"
-                onClick={() => changeView('settings')}
+                to={VIEW_PATHS.settings}
               />
           </AppNavigationGroup>
         </nav>

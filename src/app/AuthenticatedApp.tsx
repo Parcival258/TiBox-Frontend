@@ -9,6 +9,8 @@ import type { AuthState } from '@/shared/types/ui'
 import { AppOverlays } from './AppOverlays'
 import { AppView } from './AppView'
 import { useConfirmAction } from './hooks/useConfirmAction'
+import { Navigate, useLocation, useNavigate } from 'react-router'
+import { VIEW_PATHS, viewFromPath } from './routes'
 import './App.css'
 
 type AuthenticatedAppProps = {
@@ -18,6 +20,8 @@ type AuthenticatedAppProps = {
 }
 
 export function AuthenticatedApp({ authStatus, onLogout, user }: AuthenticatedAppProps) {
+  const navigate = useNavigate()
+  const location = useLocation()
   const confirmation = useConfirmAction()
   const { clearSuccess, showSuccess, successNotice } = useSuccessNotice()
   const { preferences, updatePreferences } = useUserPreferences(user?.id ?? null)
@@ -32,14 +36,29 @@ export function AuthenticatedApp({ authStatus, onLogout, user }: AuthenticatedAp
   const { actions, metrics, notifications, permissions, state } = workspace
 
   function handleLogout() {
-    return onLogout().finally(actions.resetWorkspace)
+    return onLogout().finally(() => {
+      actions.resetWorkspace()
+      navigate('/', { replace: true })
+    })
+  }
+
+  const requestedView = viewFromPath(location.pathname)
+  const canOpenRequestedView =
+    requestedView !== null &&
+    (requestedView !== 'loans' || permissions.canViewEquipmentLoans) &&
+    (requestedView !== 'maintenance' || permissions.canViewMaintenance) &&
+    (requestedView !== 'headquarters' || permissions.canViewSettings) &&
+    (requestedView !== 'users' || permissions.canManageUsers) &&
+    (!['alerts', 'cases'].includes(requestedView) || permissions.canViewAlerts)
+
+  if (!canOpenRequestedView) {
+    return <Navigate replace to={VIEW_PATHS.inventory} />
   }
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100">
       <div className="app-shell flex min-h-screen w-full flex-col gap-6 px-4 py-6 sm:px-6 lg:flex-row xl:px-8">
         <AppNavigation
-          activeView={state.activeView}
           alertAttentionCount={metrics.alertAttentionCount}
           canManageUsers={permissions.canManageUsers}
           canViewAlerts={permissions.canViewAlerts}
@@ -47,7 +66,6 @@ export function AuthenticatedApp({ authStatus, onLogout, user }: AuthenticatedAp
           canViewSettings={permissions.canViewSettings}
           myCaseCount={metrics.myCaseCount}
           userName={user?.name ?? 'Usuario'}
-          onChangeView={actions.setActiveView}
           onLogout={handleLogout}
         />
 

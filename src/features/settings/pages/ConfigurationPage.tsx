@@ -1,4 +1,5 @@
 import type { InterfaceDensity, ThemeMode, UserPreferences } from '@/shared/types/ui'
+import { Switch } from '@/shared/ui/Switch'
 import type { ReactNode } from 'react'
 import './ConfigurationPage.css'
 
@@ -38,7 +39,7 @@ export function ConfigurationPage({
         </SettingRow>
 
         <SettingRow label="Reducir animaciones" description="Desactiva movimientos y transiciones decorativas.">
-          <Toggle checked={preferences.reduceMotion} label="Reducir animaciones" onChange={(checked) => onChange({ reduceMotion: checked })} />
+          <Switch checked={preferences.reduceMotion} label="Reducir animaciones" onChange={(checked) => onChange({ reduceMotion: checked })} />
         </SettingRow>
       </SettingsCard>
 
@@ -52,10 +53,10 @@ export function ConfigurationPage({
 
       <SettingsCard title="Notificaciones" description="Configura los avisos recibidos dentro de TIBOX.">
         <SettingRow label="Notificaciones internas" description="Muestra nuevos avisos en la campana del encabezado.">
-          <Toggle checked={preferences.notificationsEnabled} label="Notificaciones internas" onChange={(checked) => onChange({ notificationsEnabled: checked })} />
+          <Switch checked={preferences.notificationsEnabled} label="Notificaciones internas" onChange={(checked) => onChange({ notificationsEnabled: checked })} />
         </SettingRow>
         <SettingRow label="Sonido de aviso" description="Reproduce un tono breve cuando llega una notificacion.">
-          <Toggle checked={preferences.notificationSoundEnabled} disabled={!preferences.notificationsEnabled} label="Sonido de aviso" onChange={(checked) => onChange({ notificationSoundEnabled: checked })} />
+          <Switch checked={preferences.notificationSoundEnabled} disabled={!preferences.notificationsEnabled} label="Sonido de aviso" onChange={(checked) => onChange({ notificationSoundEnabled: checked })} />
         </SettingRow>
         <SettingRow label="Historial local" description={`${notificationsCount} notificacion${notificationsCount === 1 ? '' : 'es'} guardada${notificationsCount === 1 ? '' : 's'}.`}>
           <button className="rounded-md border border-rose-900 px-3 py-2 text-sm font-medium text-rose-300 transition hover:border-rose-500 disabled:cursor-not-allowed disabled:opacity-50" disabled={notificationsCount === 0} type="button" onClick={onClearNotifications}>Limpiar historial</button>
@@ -83,16 +84,6 @@ function SettingRow({ children, description, label }: { children: ReactNode; des
       <div><p className="font-medium text-white">{label}</p><p className="mt-1 text-sm text-slate-400">{description}</p></div>
       <div className="flex-none">{children}</div>
     </div>
-  )
-}
-
-function Toggle({ checked, disabled, label, onChange }: { checked: boolean; disabled?: boolean; label: string; onChange: (checked: boolean) => void }) {
-  return (
-    <label className="theme-toggle-switch" title={label}>
-      <span className="sr-only">{label}</span>
-      <input aria-label={label} checked={checked} className="theme-toggle-checkbox" disabled={disabled} type="checkbox" onChange={(event) => onChange(event.target.checked)} />
-      <span className="theme-toggle-slider" aria-hidden="true" />
-    </label>
   )
 }
 

@@ -1,4 +1,4 @@
-import { getJson, postJson } from '@/shared/services/api'
+import { getJson, postJson, refreshCsrfToken } from '@/shared/services/api'
 import type { User } from '@/features/users/types'
 
 type AuthResponse = {
@@ -13,11 +13,13 @@ function unwrapAuthResponse(response: AuthResponse | SerializedAuthResponse) {
   return 'data' in response ? response.data : response
 }
 
-export function getCurrentUser() {
+export async function getCurrentUser() {
+  await refreshCsrfToken()
   return getJson<AuthResponse | SerializedAuthResponse>('/api/v1/me').then(unwrapAuthResponse)
 }
 
-export function login(email: string, password: string) {
+export async function login(email: string, password: string) {
+  await refreshCsrfToken()
   return postJson<AuthResponse | SerializedAuthResponse>('/api/v1/auth/login', {
     email,
     password,

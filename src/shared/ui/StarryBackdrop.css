@@ -2,14 +2,14 @@
   position: absolute;
   inset: 0;
   z-index: 0;
-  display: none;
+  display: block;
   overflow: hidden;
   pointer-events: none;
   background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%);
 }
 
-html[data-theme='dark'] .starry-backdrop {
-  display: block;
+html[data-theme='light'] .starry-backdrop {
+  display: none;
 }
 
 .starry-backdrop #stars,

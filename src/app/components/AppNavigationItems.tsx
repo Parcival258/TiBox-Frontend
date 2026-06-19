@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { NavLink } from 'react-router'
 import { NavigationIcon, type NavigationIconName } from './navigationIcons'
 
 type NavGroupProps = {
@@ -8,12 +9,11 @@ type NavGroupProps = {
 }
 
 type NavButtonProps = {
-  active: boolean
   badge?: number
   icon: NavigationIconName
   isCollapsed: boolean
   label: string
-  onClick: () => void
+  to: string
 }
 
 export function AppNavigationGroup({ children, isCollapsed, title }: NavGroupProps) {
@@ -26,24 +26,22 @@ export function AppNavigationGroup({ children, isCollapsed, title }: NavGroupPro
 }
 
 export function AppNavigationButton({
-  active,
   badge,
   icon,
   isCollapsed,
   label,
-  onClick,
+  to,
 }: NavButtonProps) {
   return (
-    <button
-      aria-current={active ? 'page' : undefined}
-      className={[
+    <NavLink
+      className={({ isActive }) => [
         'cir-rail__item',
-        active ? 'cir-rail__item--active' : '',
+        isActive ? 'cir-rail__item--active' : '',
         `cir-rail__item--${icon}`,
       ].filter(Boolean).join(' ')}
       title={isCollapsed ? label : undefined}
-      type="button"
-      onClick={onClick}
+      to={to}
+      viewTransition
     >
       <span className="cir-rail__active-indicator" aria-hidden="true" />
       <span className="cir-rail__icon" aria-hidden="true">
@@ -54,6 +52,6 @@ export function AppNavigationButton({
       </span>
       <span className={isCollapsed ? 'sr-only' : 'cir-rail__label'}>{label}</span>
       {badge ? <span className="sr-only">, {badge} pendientes</span> : null}
-    </button>
+    </NavLink>
   )
 }

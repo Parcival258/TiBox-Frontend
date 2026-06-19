@@ -90,6 +90,7 @@ export function createWorkspaceRefreshers({
   }
 
   function refreshCoreData(filters = equipmentFilters) {
+    setStatus('loading')
     refreshAuxiliaryData()
 
     return Promise.all([getDashboard(), getEquipment(filters)]).then(
