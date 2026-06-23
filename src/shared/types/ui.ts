@@ -4,6 +4,7 @@ export type ActiveView =
   | 'maintenance'
   | 'headquarters'
   | 'settings'
+  | 'systemLogs'
   | 'users'
   | 'cases'
   | 'alerts'

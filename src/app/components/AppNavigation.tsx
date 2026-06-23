@@ -10,6 +10,7 @@ type AppNavigationProps = {
   canViewMaintenance: boolean
   canViewSettings: boolean
   canManageUsers: boolean
+  canManageSystemLogs: boolean
   myCaseCount: number
   userName: string
   onLogout: () => void
@@ -22,6 +23,7 @@ export function AppNavigation({
   canViewMaintenance,
   canViewSettings,
   canManageUsers,
+  canManageSystemLogs,
   myCaseCount,
   userName,
   onLogout,
@@ -102,6 +104,14 @@ export function AppNavigation({
                   isCollapsed={isCollapsed}
                   label="Usuarios"
                   to={VIEW_PATHS.users}
+                />
+              )}
+              {canManageSystemLogs && (
+                <AppNavigationButton
+                  icon="logs"
+                  isCollapsed={isCollapsed}
+                  label="Logs del sistema"
+                  to={VIEW_PATHS.systemLogs}
                 />
               )}
               {canViewSettings && (

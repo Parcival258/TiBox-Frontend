@@ -18,6 +18,7 @@ type AlertCenterProps = {
   onAcknowledge: (alertId: string) => void
   onAssign: (alertId: string, assignedTo: string) => void
   onDismiss: (alertId: string) => void
+  onOpenTarget: (alert: Alert) => void
   onResolve: (alertId: string) => void
   onRunChecks: () => void
   onSelfAssign: (alertId: string) => void
@@ -31,6 +32,7 @@ export function AlertCenter({
   onAcknowledge,
   onAssign,
   onDismiss,
+  onOpenTarget,
   onResolve,
   onRunChecks,
   onSelfAssign,
@@ -80,8 +82,9 @@ export function AlertCenter({
             {visibleAlerts.map((alert) => (
               <article
                 key={alert.id}
-                className="app-context-row grid gap-4 px-4 py-4 lg:grid-cols-[1fr_220px]"
+                className="app-context-row grid cursor-pointer gap-4 px-4 py-4 transition hover:bg-slate-800/40 focus:bg-slate-800/40 focus:outline-none lg:grid-cols-[1fr_220px]"
                 tabIndex={0}
+                onClick={() => onOpenTarget(alert)}
                 onContextMenu={(event) => {
                   event.preventDefault()
                   const actions = [
@@ -133,6 +136,12 @@ export function AlertCenter({
                     y: event.clientY,
                     actions,
                   })
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault()
+                    onOpenTarget(alert)
+                  }
                 }}
               >
               <div>
@@ -197,7 +206,11 @@ function AssignSelect({
   technicians: Responsible[]
 }) {
   return (
-    <label className="min-w-40 text-xs text-slate-500">
+    <label
+      className="min-w-40 text-xs text-slate-500"
+      onClick={(event) => event.stopPropagation()}
+      onKeyDown={(event) => event.stopPropagation()}
+    >
       Asignar
       <select
         className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-2 py-1.5 text-xs text-slate-200 outline-none transition focus:border-cyan-500"

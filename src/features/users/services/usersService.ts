@@ -22,7 +22,13 @@ type SerializedUser = {
 }
 
 function unwrapUsers(response: UsersResponse | SerializedUsersResponse) {
-  return 'data' in response ? response.data.users : response.users
+  const users = 'data' in response ? response.data.users : response.users
+
+  if (!Array.isArray(users)) {
+    throw new Error('La respuesta de usuarios no tiene el formato esperado')
+  }
+
+  return users
 }
 
 function isUser(value: unknown): value is User {
@@ -62,6 +68,10 @@ export function createUser(payload: UserPayload & { password: string }) {
 
 export function updateUser(userId: string, payload: UserPayload) {
   return patchJson<UserResponse | SerializedUserResponse | SerializedUser>(`/api/v1/users/${userId}`, payload).then(unwrapUser)
+}
+
+export function reactivateUser(userId: string) {
+  return patchJson<UserResponse | SerializedUserResponse | SerializedUser>(`/api/v1/users/${userId}/reactivate`).then(unwrapUser)
 }
 
 export function deleteUser(userId: string) {

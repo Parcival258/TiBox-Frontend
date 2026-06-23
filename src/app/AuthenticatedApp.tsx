@@ -49,6 +49,7 @@ export function AuthenticatedApp({ authStatus, onLogout, user }: AuthenticatedAp
     (requestedView !== 'maintenance' || permissions.canViewMaintenance) &&
     (requestedView !== 'headquarters' || permissions.canViewSettings) &&
     (requestedView !== 'users' || permissions.canManageUsers) &&
+    (requestedView !== 'systemLogs' || permissions.canManageSystemLogs) &&
     (!['alerts', 'cases'].includes(requestedView) || permissions.canViewAlerts)
 
   if (!canOpenRequestedView) {
@@ -62,6 +63,7 @@ export function AuthenticatedApp({ authStatus, onLogout, user }: AuthenticatedAp
           key={location.pathname}
           alertAttentionCount={metrics.alertAttentionCount}
           canManageUsers={permissions.canManageUsers}
+          canManageSystemLogs={permissions.canManageSystemLogs}
           canViewAlerts={permissions.canViewAlerts}
           canViewMaintenance={permissions.canViewMaintenance}
           canViewSettings={permissions.canViewSettings}

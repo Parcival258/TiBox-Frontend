@@ -6,6 +6,7 @@ export const VIEW_PATHS: Record<ActiveView, string> = {
   maintenance: '/mantenimiento',
   headquarters: '/sedes-y-tipos',
   settings: '/configuracion',
+  systemLogs: '/logs-del-sistema',
   users: '/usuarios',
   cases: '/mis-casos',
   alerts: '/alertas',
