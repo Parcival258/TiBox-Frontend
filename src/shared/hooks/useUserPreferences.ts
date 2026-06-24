@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react'
 import type { UserPreferences } from '@/shared/types/ui'
 
 const defaultPreferences: UserPreferences = {
+  dashboardStatsSize: 'medium',
   density: 'comfortable',
   equipmentPerPage: 10,
   notificationsEnabled: true,
   notificationSoundEnabled: false,
   reduceMotion: false,
+  showDashboardStats: true,
   theme: 'dark',
 }
 

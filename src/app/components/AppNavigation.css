@@ -313,6 +313,27 @@
   animation: cir-rail-alert-ring 700ms ease-in-out;
 }
 
+.cir-rail__item--chat {
+  --rail-chat-hover: #3b82f6;
+}
+
+.cir-rail__item--chat .cir-rail__chat-svg {
+  transition:
+    color 200ms ease,
+    transform 200ms ease;
+}
+
+.cir-rail__item--chat:hover .cir-rail__chat-svg,
+.cir-rail__item--chat:focus-visible .cir-rail__chat-svg {
+  color: var(--rail-chat-hover);
+  transform: scale(1.25);
+}
+
+.cir-rail__item--chat.cir-rail__item--active:hover .cir-rail__chat-svg,
+.cir-rail__item--chat.cir-rail__item--active:focus-visible .cir-rail__chat-svg {
+  color: inherit;
+}
+
 .cir-rail__item--users:hover .cir-rail__icon svg,
 .cir-rail__item--users:focus-visible .cir-rail__icon svg {
   animation: cir-rail-users-bounce 650ms ease-in-out;
@@ -502,6 +523,10 @@ html[data-theme='light'] .cir-rail {
     0 20px 40px -24px rgb(14 17 22 / 0.22);
 }
 
+html[data-theme='light'] .cir-rail__item--chat {
+  --rail-chat-hover: #2563eb;
+}
+
 html[data-theme='light'] .cir-rail__title p {
   color: #0e7490;
 }
@@ -609,11 +634,14 @@ html[data-theme='light'] .cir-rail__avatar {
   .cir-rail__item--settings:focus-visible .cir-rail__icon svg,
   .cir-rail__item:hover .cir-rail__icon svg,
   .cir-rail__item:focus-visible .cir-rail__icon svg,
+  .cir-rail__item--chat:hover .cir-rail__chat-svg,
+  .cir-rail__item--chat:focus-visible .cir-rail__chat-svg,
   .cir-rail__b--toggle:hover svg,
   .cir-rail__b--toggle:focus-visible svg,
   .cir-rail__logout:hover svg,
   .cir-rail__logout:focus-visible svg {
     animation: none;
+    transform: none;
   }
 
   .cir-rail__active-indicator {

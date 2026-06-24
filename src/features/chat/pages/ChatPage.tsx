@@ -1,12 +1,19 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type FormEvent, type MouseEvent } from 'react'
+import type { ConfirmAction } from '@/app/hooks/useConfirmAction'
+import {
+  ContextActionMenu,
+  type ContextMenuState,
+} from '@/shared/ui/contextActionMenu/ContextActionMenu'
 import type { useChatState } from '../hooks/useChatState'
 import type { ChatConversation, ChatMessage, ChatUser } from '../types'
+import './ChatPage.css'
 
 type ChatController = ReturnType<typeof useChatState>
 
 type ChatPageProps = {
   chat: ChatController
   currentUserId: string | null
+  requestConfirmation: (action: ConfirmAction) => void
 }
 
 function formatMessageTime(value: string) {
@@ -51,8 +58,9 @@ function participantSummary(conversation: ChatConversation) {
   return `${conversation.participants.length} participantes`
 }
 
-export function ChatPage({ chat, currentUserId }: ChatPageProps) {
+export function ChatPage({ chat, currentUserId, requestConfirmation }: ChatPageProps) {
   const [composerValue, setComposerValue] = useState('')
+  const [contextMenu, setContextMenu] = useState<ContextMenuState>(null)
   const [groupName, setGroupName] = useState('')
   const [isGroupMode, setIsGroupMode] = useState(false)
   const [isNewChatOpen, setIsNewChatOpen] = useState(false)
@@ -108,7 +116,7 @@ export function ChatPage({ chat, currentUserId }: ChatPageProps) {
     })
   }
 
-  function handleSendMessage(event: React.FormEvent<HTMLFormElement>) {
+  function handleSendMessage(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const body = composerValue.trim()
     if (!body) {
@@ -119,17 +127,83 @@ export function ChatPage({ chat, currentUserId }: ChatPageProps) {
     chat.sendMessage(body).catch(() => setComposerValue(body))
   }
 
+  function requestClearConversation(conversation: ChatConversation) {
+    requestConfirmation({
+      confirmLabel: 'Vaciar chat',
+      message: `Se borraran todos los mensajes de ${conversation.displayName}, pero la conversacion seguira disponible.`,
+      onConfirm: () => {
+        void chat.clearConversation(conversation.id)
+      },
+      title: 'Vaciar conversacion',
+    })
+  }
+
+  function requestDeleteConversation(conversation: ChatConversation) {
+    requestConfirmation({
+      confirmLabel: 'Borrar chat',
+      message: `Se eliminara la conversacion ${conversation.displayName} y sus mensajes para todos los participantes.`,
+      onConfirm: () => {
+        void chat.deleteConversation(conversation.id)
+      },
+      title: 'Borrar conversacion',
+    })
+  }
+
+  function openConversationMenu(
+    conversation: ChatConversation,
+    event: MouseEvent<HTMLButtonElement>
+  ) {
+    event.preventDefault()
+
+    setContextMenu({
+      x: event.clientX,
+      y: event.clientY,
+      actions: [
+        {
+          icon: 'eye',
+          label: 'Abrir chat',
+          onSelect: () => chat.openConversation(conversation.id),
+        },
+        {
+          disabled: conversation.unreadCount === 0,
+          icon: 'check',
+          label: 'Marcar como leido',
+          onSelect: () => chat.markConversationRead(conversation.id),
+        },
+        {
+          icon: 'settings',
+          label: 'Vaciar chat',
+          onSelect: () => requestClearConversation(conversation),
+          separatorBefore: true,
+          tone: 'muted',
+        },
+        {
+          icon: 'trash',
+          label: 'Borrar chat',
+          onSelect: () => requestDeleteConversation(conversation),
+          separatorBefore: true,
+          tone: 'danger',
+        },
+      ],
+    })
+  }
+
   return (
-    <section className="h-[calc(100vh-11.5rem)] min-h-[38rem] overflow-hidden rounded-md border border-white/10 bg-[#111b21] shadow-2xl shadow-black/20">
-      <div className="grid h-full grid-cols-1 lg:grid-cols-[380px_minmax(0,1fr)]">
-        <aside className="flex min-h-0 flex-col border-b border-[#2a3942] bg-[#111b21] lg:border-b-0 lg:border-r">
-          <div className="flex h-16 items-center justify-between gap-3 bg-[#202c33] px-4">
+    <section className="chat-page">
+      <div className="chat-page__layout">
+        <aside
+          className={[
+            'chat-page__sidebar',
+            chat.activeConversation ? 'chat-page__sidebar--hidden-mobile' : '',
+          ].join(' ')}
+        >
+          <div className="chat-page__topbar">
             <div>
-              <h1 className="text-lg font-semibold text-[#e9edef]">Chats</h1>
-              <p className="text-xs text-[#8696a0]">{chat.unreadCount} mensajes sin leer</p>
+              <h1 className="chat-page__title">Chats</h1>
+              <p className="chat-page__subtitle">{chat.unreadCount} mensajes sin leer</p>
             </div>
             <button
-              className="rounded-full bg-[#00a884] px-4 py-2 text-sm font-semibold text-[#07130f] transition hover:bg-[#06cf9c]"
+              className="chat-page__primary-button"
               type="button"
               onClick={() => setIsNewChatOpen((current) => !current)}
             >
@@ -138,12 +212,12 @@ export function ChatPage({ chat, currentUserId }: ChatPageProps) {
           </div>
 
           {isNewChatOpen && (
-            <div className="border-b border-[#2a3942] bg-[#111b21] p-3">
-              <div className="mb-3 grid grid-cols-2 rounded-lg bg-[#202c33] p-1">
+            <div className="chat-page__new-chat">
+              <div className="chat-page__segmented">
                 <button
                   className={[
-                    'rounded-md px-3 py-2 text-sm font-semibold transition',
-                    !isGroupMode ? 'bg-[#00a884] text-[#07130f]' : 'text-[#aebac1] hover:bg-[#2a3942]',
+                    'chat-page__segment',
+                    !isGroupMode ? 'chat-page__segment--active' : '',
                   ].join(' ')}
                   type="button"
                   onClick={() => {
@@ -155,8 +229,8 @@ export function ChatPage({ chat, currentUserId }: ChatPageProps) {
                 </button>
                 <button
                   className={[
-                    'rounded-md px-3 py-2 text-sm font-semibold transition',
-                    isGroupMode ? 'bg-[#00a884] text-[#07130f]' : 'text-[#aebac1] hover:bg-[#2a3942]',
+                    'chat-page__segment',
+                    isGroupMode ? 'chat-page__segment--active' : '',
                   ].join(' ')}
                   type="button"
                   onClick={() => setIsGroupMode(true)}
@@ -165,9 +239,9 @@ export function ChatPage({ chat, currentUserId }: ChatPageProps) {
                 </button>
               </div>
 
-              <div className="rounded-lg bg-[#202c33] px-3 py-2">
+              <div className="chat-page__search">
                 <input
-                  className="w-full bg-transparent text-sm text-[#e9edef] outline-none placeholder:text-[#8696a0]"
+                  className="chat-page__input chat-page__input--flat"
                   placeholder="Buscar usuario"
                   type="search"
                   value={userSearch}
@@ -176,15 +250,15 @@ export function ChatPage({ chat, currentUserId }: ChatPageProps) {
               </div>
 
               {isGroupMode && (
-                <div className="mt-3 space-y-2">
+                <div className="chat-page__group-form">
                   <input
-                    className="w-full rounded-md border border-[#2a3942] bg-[#0b141a] px-3 py-2 text-sm text-[#e9edef] outline-none placeholder:text-[#8696a0] focus:border-[#00a884]"
+                    className="chat-page__input"
                     placeholder="Nombre del grupo"
                     value={groupName}
                     onChange={(event) => setGroupName(event.target.value)}
                   />
                   <button
-                    className="w-full rounded-md bg-[#00a884] px-3 py-2 text-sm font-semibold text-[#07130f] disabled:cursor-not-allowed disabled:opacity-50"
+                    className="chat-page__primary-button chat-page__primary-button--block"
                     disabled={!groupName.trim() || selectedMemberIds.length < 2 || isSubmitting}
                     type="button"
                     onClick={handleCreateGroup}
@@ -194,7 +268,7 @@ export function ChatPage({ chat, currentUserId }: ChatPageProps) {
                 </div>
               )}
 
-              <div className="mt-3 max-h-72 overflow-y-auto rounded-lg border border-[#2a3942] bg-[#0b141a] p-1">
+              <div className="chat-page__contacts">
                 {filteredContacts.map((contact) => (
                   <ContactRow
                     contact={contact}
@@ -206,15 +280,15 @@ export function ChatPage({ chat, currentUserId }: ChatPageProps) {
                   />
                 ))}
                 {!filteredContacts.length && (
-                  <p className="px-3 py-6 text-center text-sm text-[#8696a0]">No hay usuarios activos.</p>
+                  <p className="chat-page__empty">No hay usuarios activos.</p>
                 )}
               </div>
             </div>
           )}
 
-          <div className="min-h-0 flex-1 overflow-y-auto">
+          <div className="chat-page__conversation-list">
             {chat.status === 'loading' && (
-              <p className="px-3 py-6 text-center text-sm text-[#8696a0]">Cargando conversaciones...</p>
+              <p className="chat-page__empty">Cargando conversaciones...</p>
             )}
             {chat.conversations.map((conversation) => (
               <ConversationRow
@@ -222,36 +296,50 @@ export function ChatPage({ chat, currentUserId }: ChatPageProps) {
                 isActive={conversation.id === chat.activeConversationId}
                 key={conversation.id}
                 onOpen={() => chat.openConversation(conversation.id)}
+                onOpenContextMenu={(event) => openConversationMenu(conversation, event)}
               />
             ))}
             {chat.status === 'ready' && !chat.conversations.length && (
-              <p className="px-6 py-8 text-center text-sm text-[#8696a0]">
+              <p className="chat-page__empty chat-page__empty--wide">
                 Todavia no tienes conversaciones. Usa Nuevo chat para iniciar una.
               </p>
             )}
           </div>
         </aside>
 
-        <div className="flex min-h-0 flex-col bg-[#0b141a]">
+        <div
+          className={[
+            'chat-page__thread',
+            chat.activeConversation ? 'chat-page__thread--active-mobile' : '',
+          ].join(' ')}
+        >
           {chat.activeConversation ? (
             <>
-              <header className="flex h-16 items-center gap-3 border-b border-[#2a3942] bg-[#202c33] px-5">
+              <header className="chat-page__thread-header">
+                <button
+                  className="chat-page__back-button"
+                  type="button"
+                  onClick={() => chat.setActiveConversationId(null)}
+                >
+                  <span aria-hidden="true">&lt;</span>
+                  <span className="sr-only">Volver a chats</span>
+                </button>
                 <Avatar label={chat.activeConversation.displayName} />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-base font-semibold text-[#e9edef]">
+                <div className="chat-page__thread-title">
+                  <p>
                     {chat.activeConversation.displayName}
                   </p>
-                  <p className="truncate text-xs text-[#8696a0]">
+                  <span>
                     {participantSummary(chat.activeConversation)}
-                  </p>
+                  </span>
                 </div>
               </header>
 
-              <div className="relative min-h-0 flex-1 overflow-y-auto px-4 py-6">
-                <div className="absolute inset-0 opacity-[0.035] [background-image:radial-gradient(#e9edef_1px,transparent_1px)] [background-size:18px_18px]" />
-                <div className="relative mx-auto max-w-4xl space-y-2">
+              <div className="chat-page__messages">
+                <div className="chat-page__message-pattern" />
+                <div className="chat-page__message-list">
                   {chat.messagesStatus === 'loading' && (
-                    <p className="text-center text-sm text-[#8696a0]">Cargando mensajes...</p>
+                    <p className="chat-page__empty">Cargando mensajes...</p>
                   )}
                   {chat.activeMessages.map((message) => (
                     <MessageBubble
@@ -263,16 +351,16 @@ export function ChatPage({ chat, currentUserId }: ChatPageProps) {
                 </div>
               </div>
 
-              <form className="border-t border-[#2a3942] bg-[#202c33] px-4 py-3" onSubmit={handleSendMessage}>
-                <div className="mx-auto flex max-w-4xl items-center gap-3">
+              <form className="chat-page__composer" onSubmit={handleSendMessage}>
+                <div className="chat-page__composer-inner">
                   <input
-                    className="min-w-0 flex-1 rounded-lg bg-[#2a3942] px-4 py-3 text-sm text-[#e9edef] outline-none placeholder:text-[#8696a0] focus:ring-1 focus:ring-[#00a884]"
+                    className="chat-page__composer-input"
                     placeholder="Escribe un mensaje"
                     value={composerValue}
                     onChange={(event) => setComposerValue(event.target.value)}
                   />
                   <button
-                    className="flex h-11 w-11 items-center justify-center rounded-full bg-[#00a884] text-[#07130f] transition hover:bg-[#06cf9c] disabled:cursor-not-allowed disabled:opacity-50"
+                    className="chat-page__send-button"
                     disabled={!composerValue.trim()}
                     title="Enviar"
                     type="submit"
@@ -286,13 +374,13 @@ export function ChatPage({ chat, currentUserId }: ChatPageProps) {
               </form>
             </>
           ) : (
-            <div className="flex flex-1 items-center justify-center px-6 text-center">
-              <div className="max-w-md">
-                <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-[#202c33] text-4xl text-[#00a884]">
+            <div className="chat-page__placeholder">
+              <div>
+                <div className="chat-page__placeholder-icon">
                   ...
                 </div>
-                <p className="text-xl font-light text-[#e9edef]">Tibox Chat</p>
-                <p className="mt-3 text-sm leading-6 text-[#8696a0]">
+                <p className="chat-page__placeholder-title">Tibox Chat</p>
+                <p className="chat-page__placeholder-text">
                   Selecciona una conversacion o inicia un chat con un usuario activo.
                 </p>
               </div>
@@ -300,6 +388,7 @@ export function ChatPage({ chat, currentUserId }: ChatPageProps) {
           )}
         </div>
       </div>
+      <ContextActionMenu menu={contextMenu} onClose={() => setContextMenu(null)} />
     </section>
   )
 }
@@ -308,33 +397,36 @@ function ConversationRow({
   conversation,
   isActive,
   onOpen,
+  onOpenContextMenu,
 }: {
   conversation: ChatConversation
   isActive: boolean
   onOpen: () => void
+  onOpenContextMenu: (event: MouseEvent<HTMLButtonElement>) => void
 }) {
   return (
     <button
       className={[
-        'grid w-full grid-cols-[3rem_1fr_auto] items-center gap-3 border-b border-[#222e35] px-3 py-3 text-left transition',
-        isActive ? 'bg-[#2a3942]' : 'hover:bg-[#202c33]',
+        'chat-page__conversation',
+        isActive ? 'chat-page__conversation--active' : '',
       ].join(' ')}
       type="button"
       onClick={onOpen}
+      onContextMenu={onOpenContextMenu}
     >
       <Avatar label={conversation.displayName} />
-      <span className="min-w-0">
-        <span className="block truncate text-sm font-semibold text-[#e9edef]">
+      <span className="chat-page__conversation-copy">
+        <span className="chat-page__conversation-name">
           {conversation.displayName}
         </span>
-        <span className="block truncate text-sm text-[#8696a0]">{messagePreview(conversation)}</span>
+        <span className="chat-page__conversation-preview">{messagePreview(conversation)}</span>
       </span>
-      <span className="flex flex-col items-end gap-2">
-        <span className="text-xs text-[#8696a0]">
+      <span className="chat-page__conversation-meta">
+        <span>
           {formatConversationDate(conversation.lastMessageAt ?? conversation.createdAt)}
         </span>
         {conversation.unreadCount > 0 && (
-          <span className="min-w-5 rounded-full bg-[#00a884] px-1.5 py-0.5 text-center text-xs font-bold text-[#07130f]">
+          <span className="chat-page__badge">
             {conversation.unreadCount > 9 ? '9+' : conversation.unreadCount}
           </span>
         )}
@@ -358,20 +450,20 @@ function ContactRow({
 }) {
   return (
     <button
-      className="mb-1 grid w-full grid-cols-[2.5rem_1fr_auto] items-center gap-3 rounded-lg px-2 py-2 text-left transition hover:bg-[#202c33]"
+      className="chat-page__contact"
       type="button"
       onClick={isGroupMode ? onToggle : onDirect}
     >
       <Avatar label={contact.name} small />
-      <span className="min-w-0">
-        <span className="block truncate text-sm font-medium text-[#e9edef]">{contact.name}</span>
-        <span className="block truncate text-xs text-[#8696a0]">{contact.jobTitle ?? contact.email}</span>
+      <span className="chat-page__contact-copy">
+        <span className="chat-page__contact-name">{contact.name}</span>
+        <span className="chat-page__contact-subtitle">{contact.jobTitle ?? contact.email}</span>
       </span>
       {isGroupMode && (
         <span
           className={[
-            'h-5 w-5 rounded-full border',
-            isSelected ? 'border-[#00a884] bg-[#00a884]' : 'border-[#8696a0]',
+            'chat-page__selection-dot',
+            isSelected ? 'chat-page__selection-dot--selected' : '',
           ].join(' ')}
           aria-hidden="true"
         />
@@ -393,15 +485,15 @@ function MessageBubble({
     <div className={isOwn ? 'flex justify-end' : 'flex justify-start'}>
       <div
         className={[
-          'max-w-[min(36rem,82%)] rounded-lg px-3 py-2 shadow-sm',
-          isOwn ? 'rounded-tr-sm bg-[#005c4b] text-[#e9edef]' : 'rounded-tl-sm bg-[#202c33] text-[#e9edef]',
+          'chat-page__bubble',
+          isOwn ? 'chat-page__bubble--own' : 'chat-page__bubble--other',
         ].join(' ')}
       >
         {!isOwn && (
-          <p className="mb-1 text-xs font-semibold text-[#7de2c4]">{message.sender?.name ?? 'Usuario'}</p>
+          <p className="chat-page__sender">{message.sender?.name ?? 'Usuario'}</p>
         )}
-        <p className="whitespace-pre-wrap break-words text-sm leading-5">{message.body}</p>
-        <p className="mt-1 text-right text-[11px] leading-none text-[#aebac1]">
+        <p className="chat-page__message-body">{message.body}</p>
+        <p className="chat-page__message-time">
           {formatMessageTime(message.createdAt)}
           {isOwn ? ` - ${deliveryLabel(message.deliveryStatus)}` : ''}
         </p>
@@ -423,7 +515,7 @@ function Avatar({ label, small = false }: { label: string; small?: boolean }) {
   return (
     <span
       className={[
-        'flex shrink-0 items-center justify-center rounded-full bg-[#6b7c85] font-bold text-[#111b21]',
+        'chat-page__avatar',
         small ? 'h-10 w-10 text-xs' : 'h-11 w-11 text-sm',
       ].join(' ')}
       aria-hidden="true"

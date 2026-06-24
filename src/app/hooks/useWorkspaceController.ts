@@ -20,6 +20,7 @@ import { alertMetrics } from '@/shared/utils/alertMetrics'
 import { buildWorkspacePermissions } from '@/app/hooks/workspacePermissions'
 import { useInventoryState } from '@/features/inventory/hooks/useInventoryState'
 import { useLoansState } from '@/features/loans/hooks/useLoansState'
+import { useRealtimeEquipmentLoans } from '@/features/loans/hooks/useRealtimeEquipmentLoans'
 import { useMaintenanceState } from '@/features/maintenance/hooks/useMaintenanceState'
 import { useAlertsState } from '@/features/alerts/hooks/useAlertsState'
 import { useChatState } from '@/features/chat'
@@ -118,6 +119,13 @@ export function useWorkspaceController({
     setStatus,
   })
 
+  function upsertEquipmentLoan(loan: typeof equipmentLoans[number]) {
+    setEquipmentLoans((current) => [
+      loan,
+      ...current.filter((item) => item.id !== loan.id),
+    ])
+  }
+
   const settingsActions = createSettingsActions({
     refreshCoreData: refreshers.refreshCoreData,
     refreshSettingsData: refreshers.refreshSettingsData,
@@ -127,6 +135,7 @@ export function useWorkspaceController({
     refreshEquipmentLoans: refreshers.refreshEquipmentLoans,
     refreshOperationalData: refreshers.refreshOperationalData,
     showSuccess,
+    upsertEquipmentLoan,
   })
   const maintenanceActions = createMaintenanceActions({
     refreshDashboard: refreshers.refreshDashboard,
@@ -198,6 +207,14 @@ export function useWorkspaceController({
     refreshers,
     showSuccess,
     user,
+  })
+
+  useRealtimeEquipmentLoans({
+    enabled: authStatus === 'authenticated' && permissions.canViewEquipmentLoans,
+    onRefresh: refreshers.refreshEquipmentLoans,
+    onUpsert: upsertEquipmentLoan,
+    showSuccess,
+    userId: user?.id ?? null,
   })
 
   const equipmentOperationsActions = createEquipmentOperationsActions({

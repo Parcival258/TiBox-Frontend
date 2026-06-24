@@ -1,4 +1,4 @@
-import { getJson, postJson } from '@/shared/services/api'
+import { deleteJson, getJson, postJson } from '@/shared/services/api'
 import type { ChatConversation, ChatMessagesResponse, ChatUser } from '../types'
 
 type ConversationsResponse = {
@@ -53,4 +53,12 @@ export function sendChatMessage(conversationId: string, body: string) {
 
 export function markChatConversationRead(conversationId: string, messageId?: string) {
   return postJson<ReadResponse>(`/api/v1/chat/conversations/${conversationId}/read`, { messageId })
+}
+
+export function clearChatConversation(conversationId: string) {
+  return deleteJson(`/api/v1/chat/conversations/${conversationId}/messages`)
+}
+
+export function deleteChatConversation(conversationId: string) {
+  return deleteJson(`/api/v1/chat/conversations/${conversationId}`)
 }

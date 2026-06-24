@@ -122,11 +122,13 @@ export function createWorkspaceRefreshers({
 
   function refreshEquipmentLoans() {
     setEquipmentLoansStatus('loading')
-    return Promise.all([getEquipmentLoans(), getRequestableEquipment()])
-      .then(([loansResponse, equipmentResponse]) => {
+    return getEquipmentLoans()
+      .then((loansResponse) => {
         setEquipmentLoans(loansResponse)
-        setRequestableEquipment(equipmentResponse)
         setEquipmentLoansStatus('ready')
+        return getRequestableEquipment()
+          .then(setRequestableEquipment)
+          .catch(() => setRequestableEquipment([]))
       })
       .catch(() => setEquipmentLoansStatus('error'))
   }

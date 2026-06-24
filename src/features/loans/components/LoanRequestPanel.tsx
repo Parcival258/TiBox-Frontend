@@ -38,7 +38,7 @@ export function LoanRequestPanel({
   onRequest,
 }: LoanRequestPanelProps) {
   return (
-    <aside className="space-y-4 rounded-lg border border-slate-800 bg-slate-900 p-5">
+    <aside className="min-w-0 space-y-4 rounded-lg border border-slate-800 bg-slate-900 p-4 sm:p-5">
       <div>
         <p className="text-xs uppercase tracking-wide text-cyan-300">
           {canCreate ? 'Registro' : 'Solicitud'}

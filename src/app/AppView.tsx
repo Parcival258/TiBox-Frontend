@@ -256,7 +256,11 @@ export function AppView({
       )}
 
       {state.activeView === 'chat' && (
-        <ChatPage chat={workspace.chat} currentUserId={user?.id ?? null} />
+        <ChatPage
+          chat={workspace.chat}
+          currentUserId={user?.id ?? null}
+          requestConfirmation={requestConfirmation}
+        />
       )}
     </div>
   )

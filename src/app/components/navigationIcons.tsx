@@ -83,10 +83,11 @@ export function NavigationIcon({ name }: { name: NavigationIconName }) {
 
   if (name === 'chat') {
     return (
-      <svg {...commonProps}>
-        <path d="M21 12a8 8 0 0 1-8 8H6l-3 3v-7a8 8 0 1 1 18-4z" />
-        <path d="M8 10h8" />
-        <path d="M8 14h5" />
+      <svg {...commonProps} className="h-6 w-6 cir-rail__chat-svg" strokeWidth={2}>
+        <path d="M0 0h24v24H0z" stroke="none" />
+        <path d="M8 9h8" />
+        <path d="M8 13h6" />
+        <path d="M18 4a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3h-5l-5 3v-3h-2a3 3 0 0 1-3-3v-8a3 3 0 0 1 3-3h12z" />
       </svg>
     )
   }

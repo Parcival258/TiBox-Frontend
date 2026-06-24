@@ -1,4 +1,9 @@
-import type { InterfaceDensity, ThemeMode, UserPreferences } from '@/shared/types/ui'
+import type {
+  DashboardStatsSize,
+  InterfaceDensity,
+  ThemeMode,
+  UserPreferences,
+} from '@/shared/types/ui'
 import { Switch } from '@/shared/ui/Switch'
 import type { ReactNode } from 'react'
 import './ConfigurationPage.css'
@@ -47,6 +52,26 @@ export function ConfigurationPage({
         <SettingRow label="Registros por pagina" description="Cantidad predeterminada de equipos en cada pagina.">
           <select className="settings-select" value={preferences.equipmentPerPage} onChange={(event) => onChange({ equipmentPerPage: Number(event.target.value) as UserPreferences['equipmentPerPage'] })}>
             {[10, 25, 50, 100].map((value) => <option key={value} value={value}>{value}</option>)}
+          </select>
+        </SettingRow>
+      </SettingsCard>
+
+      <SettingsCard title="Inicio" description="Controla la informacion resumida del tablero principal.">
+        <SettingRow label="Mostrar estadisticas" description="Muestra u oculta las tarjetas numericas de la parte superior.">
+          <Switch checked={preferences.showDashboardStats} label="Mostrar estadisticas" onChange={(checked) => onChange({ showDashboardStats: checked })} />
+        </SettingRow>
+        <SettingRow label="Tamano de estadisticas" description="Ajusta el espacio y el tamano de los numeros del inicio.">
+          <select
+            className="settings-select"
+            disabled={!preferences.showDashboardStats}
+            value={preferences.dashboardStatsSize}
+            onChange={(event) =>
+              onChange({ dashboardStatsSize: event.target.value as DashboardStatsSize })
+            }
+          >
+            <option value="compact">Compacto</option>
+            <option value="medium">Mediano</option>
+            <option value="large">Grande</option>
           </select>
         </SettingRow>
       </SettingsCard>

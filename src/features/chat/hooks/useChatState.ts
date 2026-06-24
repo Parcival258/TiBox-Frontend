@@ -3,6 +3,8 @@ import { createRealtimeSocket, getRealtimeToken } from '@/shared/services/realti
 import {
   createDirectConversation,
   createGroupConversation,
+  clearChatConversation,
+  deleteChatConversation,
   listChatConversations,
   listChatMessages,
   listChatUsers,
@@ -189,6 +191,43 @@ export function useChatState({ authStatus, onNotify, userId }: UseChatStateOptio
     [loadMessages]
   )
 
+  const markConversationRead = useCallback((conversationId: string) => {
+    const lastMessage = messagesByConversation[conversationId]?.at(-1)
+
+    return markChatConversationRead(conversationId, lastMessage?.id)
+      .then((readResult) => {
+        setConversations((current) =>
+          current.map((conversation) =>
+            conversation.id === conversationId
+              ? { ...conversation, unreadCount: readResult.unreadCount }
+              : conversation
+          )
+        )
+      })
+      .catch(() => undefined)
+  }, [messagesByConversation])
+
+  const clearConversation = useCallback((conversationId: string) => {
+    return clearChatConversation(conversationId).then(() => {
+      setMessagesByConversation((current) => ({ ...current, [conversationId]: [] }))
+      return refreshConversations()
+    })
+  }, [refreshConversations])
+
+  const deleteConversation = useCallback((conversationId: string) => {
+    return deleteChatConversation(conversationId).then(() => {
+      setConversations((current) =>
+        current.filter((conversation) => conversation.id !== conversationId)
+      )
+      setMessagesByConversation((current) => {
+        const next = { ...current }
+        delete next[conversationId]
+        return next
+      })
+      setActiveConversationId((current) => (current === conversationId ? null : current))
+    })
+  }, [])
+
   const sendMessage = useCallback(
     (body: string) => {
       if (!activeConversationId) {
@@ -324,6 +363,9 @@ export function useChatState({ authStatus, onNotify, userId }: UseChatStateOptio
     contacts,
     conversations,
     messagesStatus,
+    clearConversation,
+    deleteConversation,
+    markConversationRead,
     openConversation,
     refreshConversations,
     sendMessage,

@@ -1,4 +1,3 @@
-import { AlertNotice } from '@/features/alerts'
 import { AppNavigation } from './components/AppNavigation'
 import { DashboardHeader, MetricGrid, SuccessNotice } from '@/shared/ui'
 import { useWorkspaceController } from './hooks/useWorkspaceController'
@@ -82,18 +81,9 @@ export function AuthenticatedApp({ authStatus, onLogout, user }: AuthenticatedAp
             onClearNotifications={notifications.clear}
             onMarkNotificationsRead={notifications.markAllAsRead}
           />
-          <MetricGrid dashboard={state.dashboard} />
-          {permissions.canViewAlerts &&
-            metrics.alertAttentionCount > 0 &&
-            state.activeView !== 'alerts' && (
-              <AlertNotice
-                activeView={state.activeView}
-                count={metrics.alertAttentionCount}
-                myCount={metrics.myAlertCount}
-                unassignedFailureCount={metrics.unassignedFailureCount}
-                onOpen={() => actions.setActiveView('alerts')}
-              />
-            )}
+          {preferences.showDashboardStats && (
+            <MetricGrid dashboard={state.dashboard} size={preferences.dashboardStatsSize} />
+          )}
           {successNotice && (
             <SuccessNotice
               message={successNotice.message}
