@@ -1,4 +1,5 @@
 import { AlertsPage, MyCasesPage } from '@/features/alerts'
+import { ChatPage } from '@/features/chat'
 import { InventoryPage } from '@/features/inventory'
 import { EquipmentLoansPage } from '@/features/loans'
 import { MaintenancePage } from '@/features/maintenance'
@@ -252,6 +253,10 @@ export function AppView({
             actions.handleAlertAction(action, 'Caso cerrado')
           }}
         />
+      )}
+
+      {state.activeView === 'chat' && (
+        <ChatPage chat={workspace.chat} currentUserId={user?.id ?? null} />
       )}
     </div>
   )

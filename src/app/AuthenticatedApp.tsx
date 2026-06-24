@@ -67,6 +67,7 @@ export function AuthenticatedApp({ authStatus, onLogout, user }: AuthenticatedAp
           canViewAlerts={permissions.canViewAlerts}
           canViewMaintenance={permissions.canViewMaintenance}
           canViewSettings={permissions.canViewSettings}
+          chatUnreadCount={workspace.chat.unreadCount}
           myCaseCount={metrics.myCaseCount}
           userName={user?.name ?? 'Usuario'}
           onLogout={handleLogout}

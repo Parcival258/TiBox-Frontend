@@ -10,6 +10,7 @@ export const VIEW_PATHS: Record<ActiveView, string> = {
   users: '/usuarios',
   cases: '/mis-casos',
   alerts: '/alertas',
+  chat: '/chat',
 }
 
 export function viewFromPath(pathname: string): ActiveView | null {

@@ -4,6 +4,7 @@ export type NavigationIconName =
   | 'settings'
   | 'calendar'
   | 'cases'
+  | 'chat'
   | 'inventory'
   | 'loans'
   | 'logs'
@@ -76,6 +77,16 @@ export function NavigationIcon({ name }: { name: NavigationIconName }) {
       <svg {...commonProps}>
         <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
         <path d="M10 21h4" />
+      </svg>
+    )
+  }
+
+  if (name === 'chat') {
+    return (
+      <svg {...commonProps}>
+        <path d="M21 12a8 8 0 0 1-8 8H6l-3 3v-7a8 8 0 1 1 18-4z" />
+        <path d="M8 10h8" />
+        <path d="M8 14h5" />
       </svg>
     )
   }

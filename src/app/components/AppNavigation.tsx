@@ -12,6 +12,7 @@ type AppNavigationProps = {
   canManageUsers: boolean
   canManageSystemLogs: boolean
   myCaseCount: number
+  chatUnreadCount: number
   userName: string
   onLogout: () => void
 }
@@ -24,6 +25,7 @@ export function AppNavigation({
   canViewSettings,
   canManageUsers,
   canManageSystemLogs,
+  chatUnreadCount,
   myCaseCount,
   userName,
   onLogout,
@@ -96,6 +98,16 @@ export function AppNavigation({
               />
             </AppNavigationGroup>
           )}
+
+          <AppNavigationGroup isCollapsed={isCollapsed} title="Comunicacion">
+            <AppNavigationButton
+              badge={chatUnreadCount}
+              icon="chat"
+              isCollapsed={isCollapsed}
+              label="Chat"
+              to={VIEW_PATHS.chat}
+            />
+          </AppNavigationGroup>
 
           <AppNavigationGroup isCollapsed={isCollapsed} title="Administracion">
               {canManageUsers && (

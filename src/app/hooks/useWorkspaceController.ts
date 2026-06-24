@@ -22,6 +22,7 @@ import { useInventoryState } from '@/features/inventory/hooks/useInventoryState'
 import { useLoansState } from '@/features/loans/hooks/useLoansState'
 import { useMaintenanceState } from '@/features/maintenance/hooks/useMaintenanceState'
 import { useAlertsState } from '@/features/alerts/hooks/useAlertsState'
+import { useChatState } from '@/features/chat'
 import { useSettingsState } from '@/features/settings/hooks/useSettingsState'
 import { useWorkspaceNavigation } from './useWorkspaceNavigation'
 import { createSettingsActions } from '@/features/settings/actions/createSettingsActions'
@@ -79,6 +80,11 @@ export function useWorkspaceController({
     notificationsEnabled,
     notificationSoundEnabled
   )
+  const chat = useChatState({
+    authStatus,
+    onNotify: notificationInbox.addNotification,
+    userId: user?.id ?? null,
+  })
 
   const permissions = buildWorkspacePermissions(user)
 
@@ -268,6 +274,7 @@ export function useWorkspaceController({
       ...settingsActions,
     },
     metrics,
+    chat,
     notifications: createWorkspaceControllerNotifications(notificationInbox),
     permissions,
     state: {
