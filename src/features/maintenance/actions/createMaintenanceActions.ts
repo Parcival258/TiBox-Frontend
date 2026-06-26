@@ -1,11 +1,22 @@
-import { createMaintenanceRecord } from '@/features/inventory/services/equipmentMaintenanceService'
 import {
+  createEquipmentGroup,
+  createMaintenanceRecord,
   createMaintenanceSchedule,
+  getEquipmentGroups,
+  getMaintenanceRecords,
   getMaintenanceSchedules,
+  updateMaintenanceClosure,
+  updateMaintenanceExecution,
+  updateMaintenanceReception,
+  uploadMaintenanceAttachment,
 } from '../services/maintenanceService'
 import type {
   CreateMaintenanceSchedulePayload,
+  EquipmentGroup,
   FinishMaintenanceSchedulePayload,
+  MaintenanceFilters,
+  MaintenanceRecord,
+  MaintenanceStage,
   MaintenanceSchedule,
 } from '../types'
 import type { ModuleState } from '@/shared/types/ui'
@@ -13,6 +24,9 @@ import type { ModuleState } from '@/shared/types/ui'
 type MaintenanceActionDependencies = {
   refreshDashboard: () => Promise<unknown>
   refreshOperationalData: () => Promise<unknown>
+  maintenanceFilters: MaintenanceFilters
+  setEquipmentGroups: (groups: EquipmentGroup[]) => void
+  setMaintenanceRecords: (records: MaintenanceRecord[]) => void
   setMaintenanceSchedules: (schedules: MaintenanceSchedule[]) => void
   setMaintenanceStatus: (status: ModuleState) => void
   showSuccess: (message: string, subText?: string) => void
@@ -21,6 +35,9 @@ type MaintenanceActionDependencies = {
 export function createMaintenanceActions({
   refreshDashboard,
   refreshOperationalData,
+  maintenanceFilters,
+  setEquipmentGroups,
+  setMaintenanceRecords,
   setMaintenanceSchedules,
   setMaintenanceStatus,
   showSuccess,
@@ -30,6 +47,17 @@ export function createMaintenanceActions({
     getMaintenanceSchedules()
       .then((response) => {
         setMaintenanceSchedules(response)
+        setMaintenanceStatus('ready')
+      })
+      .catch(() => setMaintenanceStatus('error'))
+  }
+
+  function refreshMaintenanceRecords(filters = maintenanceFilters) {
+    setMaintenanceStatus('loading')
+    Promise.all([getMaintenanceRecords(filters), getEquipmentGroups()])
+      .then(([records, groups]) => {
+        setMaintenanceRecords(records)
+        setEquipmentGroups(groups)
         setMaintenanceStatus('ready')
       })
       .catch(() => setMaintenanceStatus('error'))
@@ -45,7 +73,17 @@ export function createMaintenanceActions({
   }
 
   async function handleCreateSchedule(payload: CreateMaintenanceSchedulePayload) {
-    await createMaintenanceSchedule(payload)
+    const schedule = await createMaintenanceSchedule(payload)
+    if (schedule.equipment?.id) {
+      await createMaintenanceRecord({
+        equipmentId: schedule.equipment.id,
+        maintenanceScheduleId: schedule.id,
+        maintenanceType: schedule.maintenanceType as 'preventive' | 'corrective',
+        priority: schedule.priority,
+        scheduledDate: schedule.scheduledFor,
+        status: schedule.status === 'scheduled' ? 'pending' : schedule.status,
+      })
+    }
     await refreshOperationalData()
   }
 
@@ -66,14 +104,24 @@ export function createMaintenanceActions({
       status: 'completed',
       ...payload,
     })
-    showSuccess('Mantenimiento finalizado', 'El registro tecnico quedo asociado al cronograma.')
+    showSuccess('Mantenimiento finalizado', 'El registro tecnico quedo asociado al mantenimiento.')
     await refreshOperationalData()
   }
 
   return {
+    createEquipmentGroup,
     handleCreateSchedule,
     handleFinishSchedule,
     handleScheduleAction,
+    refreshMaintenanceRecords,
     refreshMaintenanceSchedules,
+    updateMaintenanceClosure,
+    updateMaintenanceExecution,
+    updateMaintenanceReception,
+    uploadMaintenanceAttachment: (
+      recordId: string,
+      stage: MaintenanceStage,
+      file: File
+    ) => uploadMaintenanceAttachment(recordId, stage, file),
   }
 }

@@ -30,7 +30,7 @@ export function MaintenanceScheduleTable({
   if (status === 'loading') {
     return (
       <div className="px-4 py-16 text-center text-sm text-slate-400">
-        <AppLoader label="Cargando cronograma..." />
+        <AppLoader label="Cargando mantenimientos..." />
       </div>
     )
   }
@@ -38,7 +38,7 @@ export function MaintenanceScheduleTable({
   if (status === 'error') {
     return (
       <div className="px-4 py-12 text-center text-sm text-red-200">
-        No fue posible cargar el cronograma.
+        No fue posible cargar los mantenimientos.
       </div>
     )
   }

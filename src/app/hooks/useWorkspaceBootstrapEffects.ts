@@ -17,6 +17,7 @@ type WorkspaceBootstrapRefreshers = {
 }
 
 type WorkspaceBootstrapMaintenanceActions = {
+  refreshMaintenanceRecords: () => void | Promise<unknown>
   refreshMaintenanceSchedules: () => void | Promise<unknown>
 }
 
@@ -68,6 +69,7 @@ export function useWorkspaceBootstrapEffects({
     refreshers.refreshEquipmentLoans()
     if (permissions.canViewMaintenance) {
       maintenanceActions.refreshMaintenanceSchedules()
+      maintenanceActions.refreshMaintenanceRecords()
       getMaintenanceScheduleCatalogs().then(setMaintenanceCatalogs).catch(() => undefined)
     } else {
       setMaintenanceSchedules([])

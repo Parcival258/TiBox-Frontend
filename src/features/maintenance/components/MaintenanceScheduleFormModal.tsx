@@ -112,8 +112,8 @@ function MaintenanceScheduleFormContent({
       >
         <div className="flex items-center justify-between border-b border-slate-800 px-5 py-4">
           <div>
-            <p className="text-xs uppercase tracking-wide text-cyan-300">Cronograma</p>
-            <h2 className="text-xl font-semibold text-white">Programar mantenimiento</h2>
+            <p className="text-xs uppercase tracking-wide text-cyan-300">Mantenimientos</p>
+            <h2 className="text-xl font-semibold text-white">Nuevo mantenimiento</h2>
           </div>
           <button
             className="rounded-md border border-slate-700 px-3 py-1.5 text-sm text-slate-300 transition hover:border-slate-500 hover:text-white"
@@ -125,7 +125,7 @@ function MaintenanceScheduleFormContent({
         </div>
 
         <div className="grid gap-5 p-5 md:grid-cols-2">
-          <MaintenanceFieldGroup title="Programacion">
+          <MaintenanceFieldGroup title="Planeacion">
             <MaintenanceSearchableSelect
               label="Equipo"
               placeholder="Buscar equipo"

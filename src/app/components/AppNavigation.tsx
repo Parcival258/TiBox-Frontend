@@ -74,7 +74,7 @@ export function AppNavigation({
               <AppNavigationButton
                 icon="calendar"
                 isCollapsed={isCollapsed}
-                label="Cronograma"
+                label="Mantenimientos"
                 to={VIEW_PATHS.maintenance}
               />
             )}

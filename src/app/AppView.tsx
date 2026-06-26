@@ -130,8 +130,21 @@ export function AppView({
           canClose={permissions.canCloseMaintenance}
           canCreate={permissions.canCreateMaintenance}
           canUpdate={permissions.canUpdateMaintenance}
+          catalogs={state.equipmentCatalogs}
+          equipment={state.equipment}
+          equipmentGroups={state.equipmentGroups}
+          filters={state.maintenanceFilters}
+          records={state.maintenanceRecords}
           schedules={state.maintenanceSchedules}
           status={state.maintenanceStatus}
+          onChangeFilters={(filters) => {
+            actions.setMaintenanceFilters(filters)
+            actions.refreshMaintenanceRecords(filters)
+          }}
+          onCreateGroup={async (payload) => {
+            await actions.createEquipmentGroup(payload)
+            actions.refreshMaintenanceRecords()
+          }}
           onCancel={(scheduleId) =>
             actions.handleScheduleAction(() => actions.cancelMaintenanceSchedule(scheduleId))
           }
@@ -148,6 +161,21 @@ export function AppView({
           onStart={(scheduleId) =>
             actions.handleScheduleAction(() => actions.startMaintenanceSchedule(scheduleId))
           }
+          onUpdateClosure={async (recordId, payload) => {
+            await actions.updateMaintenanceClosure(recordId, payload)
+            actions.refreshMaintenanceRecords()
+          }}
+          onUpdateExecution={async (recordId, payload) => {
+            await actions.updateMaintenanceExecution(recordId, payload)
+            actions.refreshMaintenanceRecords()
+          }}
+          onUpdateReception={async (recordId, payload) => {
+            await actions.updateMaintenanceReception(recordId, payload)
+            actions.refreshMaintenanceRecords()
+          }}
+          onUploadEvidence={async (recordId, stage, file) => {
+            await actions.uploadMaintenanceAttachment(recordId, stage, file)
+          }}
         />
       )}
 

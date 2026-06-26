@@ -1,7 +1,11 @@
 import { getDashboard } from '@/app/services/dashboardService'
 import { getAlerts } from '@/features/alerts/services/alertService'
 import { getEquipmentLoans, getRequestableEquipment } from '@/features/loans/services/loanService'
-import { getMaintenanceSchedules } from '@/features/maintenance/services/maintenanceService'
+import {
+  getEquipmentGroups,
+  getMaintenanceRecords,
+  getMaintenanceSchedules,
+} from '@/features/maintenance/services/maintenanceService'
 import { getHeadquarters, getLocations } from '@/features/settings/services/settingsService'
 import { getEquipmentTypes } from '@/features/inventory/services/equipmentTypesService'
 import { getEquipment, getEquipmentCatalogs, getEquipmentLifeSheet } from '@/features/inventory/services/equipmentQuery'
@@ -11,7 +15,7 @@ import type { EquipmentCatalogs, EquipmentType } from '@/features/inventory/type
 import type { Equipment, EquipmentFilters } from '@/features/inventory/types/equipmentCore'
 import type { EquipmentLifeSheet } from '@/features/inventory/types/equipmentLifeSheet'
 import type { EquipmentLoan, LoanEquipment } from '@/features/loans/types'
-import type { MaintenanceSchedule } from '@/features/maintenance/types'
+import type { EquipmentGroup, MaintenanceRecord, MaintenanceSchedule } from '@/features/maintenance/types'
 import type { Headquarter, Location } from '@/features/settings/types'
 import type { PaginationMeta } from '@/shared/types/pagination'
 import type { LifeSheetState, LoadState, ModuleState } from '@/shared/types/ui'
@@ -27,12 +31,14 @@ type WorkspaceRefresherDependencies = {
   setEquipment: (equipment: Equipment[]) => void
   setEquipmentCatalogs: (catalogs: EquipmentCatalogs | null) => void
   setEquipmentLoans: (loans: EquipmentLoan[]) => void
+  setEquipmentGroups: (groups: EquipmentGroup[]) => void
   setEquipmentMeta: (meta: PaginationMeta | null) => void
   setEquipmentTypes: (types: EquipmentType[]) => void
   setHeadquarters: (headquarters: Headquarter[]) => void
   setLifeSheet: (lifeSheet: EquipmentLifeSheet | null) => void
   setLifeSheetStatus: (status: LifeSheetState) => void
   setLocations: (locations: Location[]) => void
+  setMaintenanceRecords: (records: MaintenanceRecord[]) => void
   setMaintenanceSchedules: (schedules: MaintenanceSchedule[]) => void
   setMaintenanceStatus: (status: ModuleState) => void
   setRequestableEquipment: (equipment: LoanEquipment[]) => void
@@ -51,6 +57,7 @@ export function createWorkspaceRefreshers({
   setEquipment,
   setEquipmentCatalogs,
   setEquipmentLoans,
+  setEquipmentGroups,
   setEquipmentLoansStatus,
   setEquipmentMeta,
   setEquipmentTypes,
@@ -58,6 +65,7 @@ export function createWorkspaceRefreshers({
   setLifeSheet,
   setLifeSheetStatus,
   setLocations,
+  setMaintenanceRecords,
   setMaintenanceSchedules,
   setMaintenanceStatus,
   setRequestableEquipment,
@@ -152,10 +160,14 @@ export function createWorkspaceRefreshers({
 
     if (canViewMaintenance) {
       tasks.push(
-        getMaintenanceSchedules().then((response) => {
-          setMaintenanceSchedules(response)
+        Promise.all([getMaintenanceSchedules(), getMaintenanceRecords(), getEquipmentGroups()]).then(
+          ([schedulesResponse, recordsResponse, groupsResponse]) => {
+          setMaintenanceSchedules(schedulesResponse)
+          setMaintenanceRecords(recordsResponse)
+          setEquipmentGroups(groupsResponse)
           setMaintenanceStatus('ready')
-        })
+          }
+        )
       )
     }
 
