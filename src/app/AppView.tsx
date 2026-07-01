@@ -145,6 +145,14 @@ export function AppView({
             await actions.createEquipmentGroup(payload)
             actions.refreshMaintenanceRecords()
           }}
+          onDeleteGroup={async (groupId) => {
+            await actions.deleteEquipmentGroup(groupId)
+            actions.refreshMaintenanceRecords()
+          }}
+          onUpdateGroup={async (groupId, payload) => {
+            await actions.updateEquipmentGroup(groupId, payload)
+            actions.refreshMaintenanceRecords()
+          }}
           onCancel={(scheduleId) =>
             actions.handleScheduleAction(() => actions.cancelMaintenanceSchedule(scheduleId))
           }
@@ -175,6 +183,9 @@ export function AppView({
           }}
           onUploadEvidence={async (recordId, stage, file) => {
             await actions.uploadMaintenanceAttachment(recordId, stage, file)
+          }}
+          onDeleteEvidence={async (recordId, attachmentId) => {
+            await actions.deleteMaintenanceAttachment(recordId, attachmentId)
           }}
         />
       )}

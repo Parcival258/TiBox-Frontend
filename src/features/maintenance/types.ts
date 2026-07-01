@@ -44,7 +44,9 @@ export type MaintenanceRecord = {
   priority: string
   currentStage: MaintenanceStage | null
   scheduledDate: string | null
+  receivedAt: string | null
   performedAt: string | null
+  closedAt: string | null
   performer: Person
   equipment?: {
     id: string
@@ -84,7 +86,9 @@ export type CreateMaintenanceRecordPayload = {
   priority?: string
   currentStage?: MaintenanceStage
   scheduledDate?: string
+  receivedAt?: string
   performedAt?: string
+  closedAt?: string
   performedBy?: string
   description?: string
   initialEquipmentState?: string

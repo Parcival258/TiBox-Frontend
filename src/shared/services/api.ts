@@ -1,6 +1,22 @@
 const apiUrl = (import.meta.env.VITE_API_URL ?? 'http://localhost:3333').replace(/\/$/, '')
 let csrfToken: string | null = null
 
+export class ApiError extends Error {
+  status: number
+  details?: unknown
+
+  constructor(
+    status: number,
+    message: string,
+    details?: unknown,
+  ) {
+    super(message)
+    this.name = 'ApiError'
+    this.status = status
+    this.details = details
+  }
+}
+
 function buildUrl(path: string) {
   return `${apiUrl}/${path.replace(/^\//, '')}`
 }
@@ -66,7 +82,7 @@ async function getJson<T>(path: string): Promise<T> {
   })
 
   if (!response.ok) {
-    throw new Error(`HTTP ${response.status}`)
+    throw await apiError(response)
   }
 
   return response.json()
@@ -81,7 +97,7 @@ async function postJson<T>(path: string, body?: unknown): Promise<T> {
   })
 
   if (!response.ok) {
-    throw new Error(`HTTP ${response.status}`)
+    throw await apiError(response)
   }
 
   return response.json()
@@ -96,7 +112,7 @@ async function patchJson<T>(path: string, body?: unknown): Promise<T> {
   })
 
   if (!response.ok) {
-    throw new Error(`HTTP ${response.status}`)
+    throw await apiError(response)
   }
 
   return response.json()
@@ -110,7 +126,7 @@ async function deleteJson(path: string): Promise<void> {
   })
 
   if (!response.ok) {
-    throw new Error(`HTTP ${response.status}`)
+    throw await apiError(response)
   }
 }
 
@@ -123,10 +139,32 @@ async function postForm<T>(path: string, body: FormData): Promise<T> {
   })
 
   if (!response.ok) {
-    throw new Error(`HTTP ${response.status}`)
+    throw await apiError(response)
   }
 
   return response.json()
+}
+
+async function apiError(response: Response) {
+  let details: unknown
+  let message = `HTTP ${response.status}`
+
+  try {
+    details = await response.json()
+
+    if (
+      details &&
+      typeof details === 'object' &&
+      'message' in details &&
+      typeof details.message === 'string'
+    ) {
+      message = details.message
+    }
+  } catch {
+    message = response.statusText || message
+  }
+
+  return new ApiError(response.status, message, details)
 }
 
 export { buildUrl, deleteJson, getJson, patchJson, postForm, postJson, refreshCsrfToken }

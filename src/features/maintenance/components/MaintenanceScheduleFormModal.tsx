@@ -1,7 +1,9 @@
 import { useMemo, useState, type FormEvent } from 'react'
 import { useEscapeKey } from '@/shared/hooks/useEscapeKey'
+import { ApiError } from '@/shared/services/api'
 import type {
   CreateMaintenanceSchedulePayload,
+  EquipmentGroup,
   MaintenanceScheduleCatalogs,
 } from '../types'
 import type { EquipmentCatalogs } from '@/features/inventory/types/equipmentCatalogs'
@@ -27,13 +29,34 @@ type MaintenanceScheduleFormModalProps = {
   catalogs: MaintenanceScheduleCatalogs | null
   equipment: Equipment[]
   equipmentCatalogs: EquipmentCatalogs | null
+  equipmentGroups: EquipmentGroup[]
   isOpen: boolean
   onClose: () => void
-  onSubmit: (payload: CreateMaintenanceSchedulePayload) => Promise<void>
+  onSubmit: (payload: CreateMaintenanceSchedulePayload | CreateMaintenanceSchedulePayload[]) => Promise<void>
 }
 
 function responsibleSearchText(responsible: { email?: string; jobTitle?: string | null; name: string }) {
   return [responsible.name, responsible.email, responsible.jobTitle].filter(Boolean).join(' ')
+}
+
+function scheduleFormErrorMessage(error: unknown) {
+  if (error instanceof ApiError) {
+    if (error.status === 403) {
+      return 'No tienes permisos para programar mantenimientos.'
+    }
+
+    if (error.status === 422) {
+      return 'El backend rechazo algun equipo, fecha o tecnico seleccionado.'
+    }
+
+    return `No fue posible programar el mantenimiento. ${error.message}`
+  }
+
+  if (error instanceof Error && error.message === 'Selected group has no equipment') {
+    return 'El grupo seleccionado no tiene equipos activos para programar.'
+  }
+
+  return 'No fue posible programar el mantenimiento. Revisa equipo, fecha y permisos.'
 }
 
 export function MaintenanceScheduleFormModal(props: MaintenanceScheduleFormModalProps) {
@@ -48,12 +71,16 @@ function MaintenanceScheduleFormContent({
   catalogs,
   equipment,
   equipmentCatalogs,
+  equipmentGroups,
   isOpen,
   onClose,
   onSubmit,
 }: MaintenanceScheduleFormModalProps) {
   const [form, setForm] = useState<MaintenanceScheduleFormState>(emptyMaintenanceScheduleForm)
+  const [scope, setScope] = useState<'equipment' | 'group'>('equipment')
+  const [groupId, setGroupId] = useState('')
   const [submitState, setSubmitState] = useState<'idle' | 'submitting' | 'error'>('idle')
+  const [errorMessage, setErrorMessage] = useState('')
 
   useEscapeKey(isOpen, onClose)
 
@@ -81,6 +108,13 @@ function MaintenanceScheduleFormContent({
         })),
     [equipment]
   )
+  const selectedGroup = equipmentGroups.find((group) => group.id === groupId) ?? null
+  const equipmentById = useMemo(() => new Map(equipment.map((item) => [item.id, item])), [equipment])
+  const groupEquipment =
+    selectedGroup?.equipment
+      .map((item) => equipmentById.get(item.id))
+      .filter((item): item is Equipment => Boolean(item))
+      .filter((item) => item.status !== 'retired') ?? []
 
   function setField<Key extends keyof MaintenanceScheduleFormState>(
     key: Key,
@@ -95,11 +129,32 @@ function MaintenanceScheduleFormContent({
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
     setSubmitState('submitting')
+    setErrorMessage('')
 
     try {
-      await onSubmit(maintenanceScheduleFormToPayload(form))
+      const basePayload = maintenanceScheduleFormToPayload(form)
+
+      if (scope === 'group') {
+        const { equipmentId: _unusedEquipmentId, ...scheduleFields } = basePayload
+        const groupPayload = groupEquipment.map((item) => ({
+          ...scheduleFields,
+          equipmentId: item.id,
+          notes: [basePayload.notes, selectedGroup ? `Grupo: ${selectedGroup.name}` : '']
+            .filter(Boolean)
+            .join('\n'),
+        }))
+
+        if (groupPayload.length === 0) {
+          throw new Error('Selected group has no equipment')
+        }
+
+        await onSubmit(groupPayload)
+      } else {
+        await onSubmit(basePayload)
+      }
       onClose()
-    } catch {
+    } catch (error) {
+      setErrorMessage(scheduleFormErrorMessage(error))
       setSubmitState('error')
     }
   }
@@ -126,14 +181,56 @@ function MaintenanceScheduleFormContent({
 
         <div className="grid gap-5 p-5 md:grid-cols-2">
           <MaintenanceFieldGroup title="Planeacion">
-            <MaintenanceSearchableSelect
-              label="Equipo"
-              placeholder="Buscar equipo"
-              required
-              value={form.equipmentId}
-              onChange={(value) => setField('equipmentId', value)}
-              options={equipmentOptions}
+            <MaintenanceSelect
+              label="Alcance"
+              value={scope}
+              onChange={(value) => {
+                const nextScope = value as 'equipment' | 'group'
+                setScope(nextScope)
+                setField('equipmentId', '')
+                setGroupId('')
+              }}
+              options={[
+                { label: 'Un equipo', value: 'equipment' },
+                { label: 'Grupo completo', value: 'group' },
+              ]}
             />
+            {scope === 'equipment' ? (
+              <MaintenanceSearchableSelect
+                label="Equipo"
+                placeholder="Buscar equipo"
+                required
+                value={form.equipmentId}
+                onChange={(value) => setField('equipmentId', value)}
+                options={equipmentOptions}
+              />
+            ) : (
+              <>
+                <MaintenanceSelect
+                  label="Grupo"
+                  required
+                  value={groupId}
+                  onChange={setGroupId}
+                  options={equipmentGroups.map((group) => ({
+                    label: `${group.name} (${group.equipment.length} equipos)`,
+                    value: group.id,
+                  }))}
+                />
+                {selectedGroup && (
+                  <div className="rounded-md border border-slate-800 bg-slate-950 px-3 py-2">
+                    <p className="text-xs font-medium uppercase text-slate-500">Equipos incluidos</p>
+                    <p className="mt-1 text-sm text-slate-300">
+                      {groupEquipment.map((item) => item.internalCode).join(', ') || 'Sin equipos activos'}
+                    </p>
+                    {selectedGroup.equipment.length !== groupEquipment.length && (
+                      <p className="mt-2 text-xs text-amber-200">
+                        Algunos equipos del grupo no estan disponibles para programacion.
+                      </p>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
             <MaintenanceInput
               label="Fecha programada"
               required
@@ -195,7 +292,7 @@ function MaintenanceScheduleFormContent({
 
         {submitState === 'error' && (
           <p className="mx-5 rounded-md border border-red-900 bg-red-950/30 px-3 py-2 text-sm text-red-200">
-            No fue posible programar el mantenimiento. Revisa equipo, fecha y permisos.
+            {errorMessage || 'No fue posible programar el mantenimiento. Revisa equipo, fecha y permisos.'}
           </p>
         )}
 

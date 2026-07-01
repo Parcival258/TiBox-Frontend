@@ -1,5 +1,7 @@
 import {
   createEquipmentGroup,
+  deleteEquipmentGroup,
+  deleteMaintenanceAttachment,
   createMaintenanceRecord,
   createMaintenanceSchedule,
   getEquipmentGroups,
@@ -7,6 +9,7 @@ import {
   getMaintenanceSchedules,
   updateMaintenanceClosure,
   updateMaintenanceExecution,
+  updateEquipmentGroup,
   updateMaintenanceReception,
   uploadMaintenanceAttachment,
 } from '../services/maintenanceService'
@@ -72,18 +75,13 @@ export function createMaintenanceActions({
       .catch(() => setMaintenanceStatus('error'))
   }
 
-  async function handleCreateSchedule(payload: CreateMaintenanceSchedulePayload) {
-    const schedule = await createMaintenanceSchedule(payload)
-    if (schedule.equipment?.id) {
-      await createMaintenanceRecord({
-        equipmentId: schedule.equipment.id,
-        maintenanceScheduleId: schedule.id,
-        maintenanceType: schedule.maintenanceType as 'preventive' | 'corrective',
-        priority: schedule.priority,
-        scheduledDate: schedule.scheduledFor,
-        status: schedule.status === 'scheduled' ? 'pending' : schedule.status,
-      })
+  async function handleCreateSchedule(payload: CreateMaintenanceSchedulePayload | CreateMaintenanceSchedulePayload[]) {
+    const payloads = Array.isArray(payload) ? payload : [payload]
+
+    for (const item of payloads) {
+      await createMaintenanceSchedule(item)
     }
+
     await refreshOperationalData()
   }
 
@@ -110,6 +108,7 @@ export function createMaintenanceActions({
 
   return {
     createEquipmentGroup,
+    deleteEquipmentGroup,
     handleCreateSchedule,
     handleFinishSchedule,
     handleScheduleAction,
@@ -117,7 +116,9 @@ export function createMaintenanceActions({
     refreshMaintenanceSchedules,
     updateMaintenanceClosure,
     updateMaintenanceExecution,
+    updateEquipmentGroup,
     updateMaintenanceReception,
+    deleteMaintenanceAttachment,
     uploadMaintenanceAttachment: (
       recordId: string,
       stage: MaintenanceStage,

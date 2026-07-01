@@ -94,6 +94,10 @@ export function uploadMaintenanceAttachment(recordId: string, stage: Maintenance
   return postForm<MaintenanceAttachment>(`/api/v1/maintenance/records/${recordId}/attachments`, body)
 }
 
+export function deleteMaintenanceAttachment(recordId: string, attachmentId: string) {
+  return deleteJson(`/api/v1/maintenance/records/${recordId}/attachments/${attachmentId}`)
+}
+
 export function maintenanceAttachmentUrl(recordId: string, attachmentId: string) {
   return buildUrl(`/api/v1/maintenance/records/${recordId}/attachments/${attachmentId}`)
 }
