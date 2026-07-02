@@ -70,6 +70,7 @@ export function createMaintenanceActions({
     action()
       .then(() => {
         refreshMaintenanceSchedules()
+        refreshMaintenanceRecords()
         return refreshDashboard()
       })
       .catch(() => setMaintenanceStatus('error'))
@@ -93,15 +94,22 @@ export function createMaintenanceActions({
       return
     }
 
-    await createMaintenanceRecord({
-      equipmentId: schedule.equipment.id,
-      maintenanceScheduleId: schedule.id,
-      maintenanceType: schedule.maintenanceType as 'preventive' | 'corrective',
-      priority: schedule.priority,
-      scheduledDate: schedule.scheduledFor,
-      status: 'completed',
-      ...payload,
-    })
+    const [existingRecord] = await getMaintenanceRecords({ maintenanceScheduleId: schedule.id })
+
+    if (existingRecord) {
+      await updateMaintenanceClosure(existingRecord.id, payload)
+    } else {
+      await createMaintenanceRecord({
+        equipmentId: schedule.equipment.id,
+        maintenanceScheduleId: schedule.id,
+        maintenanceType: schedule.maintenanceType as 'preventive' | 'corrective',
+        priority: schedule.priority,
+        scheduledDate: schedule.scheduledFor,
+        status: 'completed',
+        ...payload,
+      })
+    }
+
     showSuccess('Mantenimiento finalizado', 'El registro tecnico quedo asociado al mantenimiento.')
     await refreshOperationalData()
   }

@@ -189,7 +189,7 @@ function EquipmentGridRow({
         {equipmentStatusLabel(equipment.status)}
       </td>
       <td className="break-words px-4 py-3 text-slate-300">
-        {[equipment.headquarter?.name, equipment.location?.area, equipment.location?.office]
+        {[equipment.headquarter?.name, equipment.location?.floor, equipment.location?.area, equipment.location?.office]
           .filter(Boolean)
           .join(' / ') || 'Sin ubicacion'}
       </td>

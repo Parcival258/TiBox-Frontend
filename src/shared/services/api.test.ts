@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { buildUrl, getJson, postJson, refreshCsrfToken } from './api'
+import { buildUrl, getJson, postJson, refreshCsrfToken, resolveServiceUrl } from './api'
 
 afterEach(() => {
   document.cookie = 'XSRF-TOKEN=; Max-Age=0; Path=/'
@@ -9,6 +9,15 @@ afterEach(() => {
 describe('api client', () => {
   it('normalizes endpoint URLs', () => {
     expect(buildUrl('/api/v1/equipment')).toBe('http://localhost:3333/api/v1/equipment')
+  })
+
+  it('derives the backend URL when running from a Dev Tunnel frontend', () => {
+    expect(
+      resolveServiceUrl(
+        'http://localhost:3333',
+        'https://j31b29t0-5173.use2.devtunnels.ms/login'
+      )
+    ).toBe('https://j31b29t0-3333.use2.devtunnels.ms')
   })
 
   it('sends credentials and parses JSON responses', async () => {

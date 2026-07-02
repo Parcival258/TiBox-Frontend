@@ -110,6 +110,7 @@ export type CreateMaintenanceRecordPayload = {
 export type MaintenanceFilters = {
   equipmentGroupId?: string
   headquarterId?: string
+  maintenanceScheduleId?: string
   maintenanceType?: 'preventive' | 'corrective'
   scheduledFrom?: string
   scheduledTo?: string

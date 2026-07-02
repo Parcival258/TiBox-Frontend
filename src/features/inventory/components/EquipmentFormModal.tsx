@@ -18,6 +18,17 @@ type EquipmentFormModalProps = {
   onSubmit: (payload: EquipmentPayload) => Promise<void>
 }
 
+export type LocationSelectorState = {
+  area: string
+  floor: string
+}
+
+export type LocationSelectorOptions = {
+  areas: Array<{ label: string; value: string }>
+  floors: Array<{ label: string; value: string }>
+  offices: Array<{ label: string; value: string }>
+}
+
 export function EquipmentFormModal(props: EquipmentFormModalProps) {
   if (!props.isOpen) {
     return null
@@ -41,19 +52,34 @@ function EquipmentFormModalContent({
 }: EquipmentFormModalProps) {
   const [form, setForm] = useState<EquipmentFormState>(() => equipmentToForm(equipment))
   const [submitState, setSubmitState] = useState<'idle' | 'submitting' | 'error'>('idle')
+  const [locationSelector, setLocationSelector] = useState<LocationSelectorState>(() =>
+    locationSelectorFromId(equipmentToForm(equipment).locationId, catalogs)
+  )
 
   useEscapeKey(isOpen, onClose)
 
-  const locationOptions = useMemo(() => {
-    const locations = catalogs?.locations ?? []
+  const headquarterLocations = useMemo(
+    () =>
+      (catalogs?.locations ?? []).filter(
+        (location) => !form.headquarterId || location.headquarterId === form.headquarterId
+      ),
+    [catalogs?.locations, form.headquarterId]
+  )
+  const locationOptions = useMemo<LocationSelectorOptions>(() => {
+    const floorLocations = headquarterLocations.filter(
+      (location) => location.floor === locationSelector.floor
+    )
+    const areaLocations = floorLocations.filter((location) => location.area === locationSelector.area)
 
-    return locations
-      .filter((location) => !form.headquarterId || location.headquarterId === form.headquarterId)
-      .map((location) => ({
-        label: [location.area, location.office, location.floor].filter(Boolean).join(' / '),
+    return {
+      floors: uniqueLocationOptions(headquarterLocations.map((location) => location.floor)),
+      areas: uniqueLocationOptions(floorLocations.map((location) => location.area)),
+      offices: areaLocations.map((location) => ({
+        label: location.office || 'Sin oficina',
         value: location.id,
-      }))
-  }, [catalogs?.locations, form.headquarterId])
+      })),
+    }
+  }, [headquarterLocations, locationSelector.area, locationSelector.floor])
 
   function setField<Key extends keyof EquipmentFormState>(key: Key, value: EquipmentFormState[Key]) {
     setForm((current) => ({
@@ -61,6 +87,20 @@ function EquipmentFormModalContent({
       [key]: value,
       ...(key === 'headquarterId' ? { locationId: '' } : {}),
     }))
+
+    if (key === 'headquarterId') {
+      setLocationSelector({ floor: '', area: '' })
+    }
+  }
+
+  function setLocationFloor(floor: string) {
+    setLocationSelector({ floor, area: '' })
+    setField('locationId', '')
+  }
+
+  function setLocationArea(area: string) {
+    setLocationSelector((current) => ({ ...current, area }))
+    setField('locationId', '')
   }
 
   async function handleSubmit(event: FormEvent) {
@@ -101,7 +141,10 @@ function EquipmentFormModalContent({
           catalogs={catalogs}
           form={form}
           locationOptions={locationOptions}
+          locationSelector={locationSelector}
           onChangeField={setField}
+          onChangeLocationArea={setLocationArea}
+          onChangeLocationFloor={setLocationFloor}
         />
 
         {submitState === 'error' && (
@@ -129,4 +172,19 @@ function EquipmentFormModalContent({
       </form>
     </div>
   )
+}
+
+function locationSelectorFromId(locationId: string, catalogs: EquipmentCatalogs | null): LocationSelectorState {
+  const location = catalogs?.locations.find((item) => item.id === locationId)
+
+  return {
+    area: location?.area ?? '',
+    floor: location?.floor ?? '',
+  }
+}
+
+function uniqueLocationOptions(values: Array<string | null>) {
+  return Array.from(new Set(values.filter((value): value is string => Boolean(value))))
+    .sort((first, second) => first.localeCompare(second))
+    .map((value) => ({ label: value, value }))
 }

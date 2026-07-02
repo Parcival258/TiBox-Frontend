@@ -31,8 +31,9 @@ export function LifeSheetEquipmentDetails({ equipment }: LifeSheetEquipmentDetai
         <Info
           label="Ubicacion"
           value={
-            [equipment.location?.area, equipment.location?.office].filter(Boolean).join(' / ') ||
-            'Sin dato'
+            [equipment.location?.floor, equipment.location?.area, equipment.location?.office]
+              .filter(Boolean)
+              .join(' / ') || 'Sin dato'
           }
         />
         <Info label="Responsable" value={valueOrEmpty(equipment.currentResponsible?.name)} />

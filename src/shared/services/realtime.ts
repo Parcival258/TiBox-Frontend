@@ -1,11 +1,11 @@
 import { io, type Socket } from 'socket.io-client'
-import { postJson } from '@/shared/services/api'
+import { postJson, resolveServiceUrl } from '@/shared/services/api'
 
-const realtimeUrl = (
+const realtimeUrl = resolveServiceUrl(
   import.meta.env.VITE_WS_URL ??
   import.meta.env.VITE_API_URL ??
   'http://localhost:3333'
-).replace(/\/$/, '')
+)
 
 type RealtimeTokenResponse = {
   data: {

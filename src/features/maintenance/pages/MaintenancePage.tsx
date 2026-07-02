@@ -156,6 +156,7 @@ export function MaintenancePage({
       return
     }
 
+    setActiveStage(selectedRecord.currentStage ?? 'reception')
     getMaintenanceAttachments(selectedRecord.id).then(setAttachments).catch(() => setAttachments([]))
     getMaintenanceHistory(selectedRecord.id).then(setHistory).catch(() => setHistory([]))
   }, [selectedRecord])
@@ -494,6 +495,11 @@ function EquipmentGroupsPanel({
 }) {
   const [form, setForm] = useState({ description: '', equipmentIds: [] as string[], name: '' })
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null)
+  const [equipmentAreaFilter, setEquipmentAreaFilter] = useState('')
+  const [equipmentFloorFilter, setEquipmentFloorFilter] = useState('')
+  const [equipmentHeadquarterFilter, setEquipmentHeadquarterFilter] = useState('')
+  const [equipmentOfficeFilter, setEquipmentOfficeFilter] = useState('')
+  const [equipmentTypeFilter, setEquipmentTypeFilter] = useState('')
   const [equipmentQuery, setEquipmentQuery] = useState('')
   const [groupQuery, setGroupQuery] = useState('')
   const [state, setState] = useState<'idle' | 'saving' | 'deleting' | 'error'>('idle')
@@ -501,14 +507,42 @@ function EquipmentGroupsPanel({
   const selectedIds = new Set(form.equipmentIds)
   const normalizedEquipmentQuery = equipmentQuery.trim().toLowerCase()
   const normalizedGroupQuery = groupQuery.trim().toLowerCase()
-  const matchingEquipment = equipment
+  const availableEquipment = equipment.filter((item) => !selectedIds.has(item.id))
+  const equipmentFloorOptions = uniqueEquipmentValues(
+    availableEquipment.filter((item) => matchesHeadquarter(item, equipmentHeadquarterFilter)),
+    (item) => item.location?.floor
+  )
+  const equipmentAreaOptions = uniqueEquipmentValues(
+    availableEquipment.filter(
+      (item) =>
+        matchesHeadquarter(item, equipmentHeadquarterFilter) &&
+        matchesLocationPart(item.location?.floor, equipmentFloorFilter)
+    ),
+    (item) => item.location?.area
+  )
+  const equipmentOfficeOptions = uniqueEquipmentValues(
+    availableEquipment.filter(
+      (item) =>
+        matchesHeadquarter(item, equipmentHeadquarterFilter) &&
+        matchesLocationPart(item.location?.floor, equipmentFloorFilter) &&
+        matchesLocationPart(item.location?.area, equipmentAreaFilter)
+    ),
+    (item) => item.location?.office
+  )
+  const filteredEquipment = equipment
     .filter((item) => !selectedIds.has(item.id))
+    .filter((item) => matchesHeadquarter(item, equipmentHeadquarterFilter))
+    .filter((item) => matchesLocationPart(item.location?.floor, equipmentFloorFilter))
+    .filter((item) => matchesLocationPart(item.location?.area, equipmentAreaFilter))
+    .filter((item) => matchesLocationPart(item.location?.office, equipmentOfficeFilter))
+    .filter((item) => !equipmentTypeFilter || item.type === equipmentTypeFilter)
     .filter((item) =>
-      `${item.internalCode} ${item.type} ${item.brand ?? ''} ${item.model ?? ''}`
+      equipmentSearchText(item)
         .toLowerCase()
         .includes(normalizedEquipmentQuery)
     )
-    .slice(0, 8)
+  const matchingEquipment = filteredEquipment
+    .slice(0, 20)
   const visibleGroups = equipmentGroups.filter((group) => {
     if (!normalizedGroupQuery) {
       return true
@@ -523,6 +557,7 @@ function EquipmentGroupsPanel({
   function resetForm() {
     setForm({ description: '', equipmentIds: [], name: '' })
     setEditingGroupId(null)
+    clearEquipmentFilters()
     setEquipmentQuery('')
     setState('idle')
   }
@@ -534,8 +569,35 @@ function EquipmentGroupsPanel({
       equipmentIds: group.equipment.map((item) => item.id),
       name: group.name,
     })
+    clearEquipmentFilters()
     setEquipmentQuery('')
     setState('idle')
+  }
+
+  function clearEquipmentFilters() {
+    setEquipmentAreaFilter('')
+    setEquipmentFloorFilter('')
+    setEquipmentHeadquarterFilter('')
+    setEquipmentOfficeFilter('')
+    setEquipmentTypeFilter('')
+  }
+
+  function changeEquipmentHeadquarterFilter(value: string) {
+    setEquipmentHeadquarterFilter(value)
+    setEquipmentFloorFilter('')
+    setEquipmentAreaFilter('')
+    setEquipmentOfficeFilter('')
+  }
+
+  function changeEquipmentFloorFilter(value: string) {
+    setEquipmentFloorFilter(value)
+    setEquipmentAreaFilter('')
+    setEquipmentOfficeFilter('')
+  }
+
+  function changeEquipmentAreaFilter(value: string) {
+    setEquipmentAreaFilter(value)
+    setEquipmentOfficeFilter('')
   }
 
   function addEquipment(equipmentId: string) {
@@ -693,12 +755,63 @@ function EquipmentGroupsPanel({
             <span className="text-slate-500">Buscar equipos para agregar</span>
             <input
               className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-200 outline-none transition placeholder:text-slate-600 focus:border-cyan-500"
-              placeholder="Codigo, tipo, marca o modelo"
+              placeholder="Codigo, tipo, marca, sede, piso, area u oficina"
               type="text"
               value={equipmentQuery}
               onChange={(event) => setEquipmentQuery(event.target.value)}
             />
           </label>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <MaintenanceSelect
+              label="Sede"
+              value={equipmentHeadquarterFilter}
+              options={uniqueEquipmentValues(availableEquipment, (item) => item.headquarter?.name).map((value) => ({
+                label: value,
+                value,
+              }))}
+              onChange={changeEquipmentHeadquarterFilter}
+            />
+            <MaintenanceSelect
+              label="Tipo"
+              value={equipmentTypeFilter}
+              options={uniqueEquipmentValues(availableEquipment, (item) => item.type).map((value) => ({
+                label: value,
+                value,
+              }))}
+              onChange={setEquipmentTypeFilter}
+            />
+            <MaintenanceSelect
+              label="Piso"
+              value={equipmentFloorFilter}
+              options={equipmentFloorOptions.map((value) => ({ label: value, value }))}
+              onChange={changeEquipmentFloorFilter}
+            />
+            <MaintenanceSelect
+              label="Area"
+              value={equipmentAreaFilter}
+              options={equipmentAreaOptions.map((value) => ({ label: value, value }))}
+              onChange={changeEquipmentAreaFilter}
+            />
+            <MaintenanceSelect
+              label="Oficina"
+              value={equipmentOfficeFilter}
+              options={equipmentOfficeOptions.map((value) => ({ label: value, value }))}
+              onChange={setEquipmentOfficeFilter}
+            />
+            <div className="flex items-end gap-2">
+              <span className="rounded-md border border-slate-800 px-3 py-2 text-sm text-slate-400">
+                {filteredEquipment.length}/{availableEquipment.length}
+              </span>
+              <button
+                className="rounded-md border border-slate-700 px-3 py-2 text-sm text-slate-300 transition hover:border-slate-500 hover:text-white"
+                type="button"
+                onClick={clearEquipmentFilters}
+              >
+                Limpiar filtros
+              </button>
+            </div>
+          </div>
 
           <div className="max-h-56 overflow-y-auto rounded-md border border-slate-800 bg-slate-950">
             {matchingEquipment.map((item) => (
@@ -711,6 +824,9 @@ function EquipmentGroupsPanel({
                 <span className="block font-medium">{item.internalCode}</span>
                 <span className="text-xs text-slate-500">
                   {item.type} {item.brand ? `/ ${item.brand}` : ''} {item.model ? `/ ${item.model}` : ''}
+                </span>
+                <span className="mt-1 block text-xs text-slate-500">
+                  {equipmentLocationLabel(item)}
                 </span>
               </button>
             ))}
@@ -758,6 +874,44 @@ function EquipmentGroupsPanel({
         </div>
       </form>
     </div>
+  )
+}
+
+function equipmentLocationLabel(item: Equipment) {
+  return (
+    [item.headquarter?.name, item.location?.floor, item.location?.area, item.location?.office]
+      .filter(Boolean)
+      .join(' / ') || 'Sin ubicacion'
+  )
+}
+
+function equipmentSearchText(item: Equipment) {
+  return [
+    item.internalCode,
+    item.serial,
+    item.assetTag,
+    item.type,
+    item.brand,
+    item.model,
+    equipmentLocationLabel(item),
+    item.currentResponsible?.name,
+    item.secondaryResponsible?.name,
+  ]
+    .filter(Boolean)
+    .join(' ')
+}
+
+function matchesHeadquarter(item: Equipment, headquarter: string) {
+  return !headquarter || item.headquarter?.name === headquarter
+}
+
+function matchesLocationPart(value: string | null | undefined, filter: string) {
+  return !filter || value === filter
+}
+
+function uniqueEquipmentValues(equipment: Equipment[], getValue: (item: Equipment) => string | null | undefined) {
+  return Array.from(new Set(equipment.map(getValue).filter((value): value is string => Boolean(value)))).sort(
+    (first, second) => first.localeCompare(second)
   )
 }
 
@@ -1311,8 +1465,8 @@ function EvidencePanel({
     <section className="mt-6 rounded-lg border border-slate-800 bg-slate-950 p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h4 className="text-sm font-semibold text-white">Evidencias</h4>
-          <p className="text-xs text-slate-500">Imagenes, PDF, Word o Excel asociados a la etapa.</p>
+          <h4 className="text-sm font-semibold text-white">Evidencias de {stageLabel(activeStage)}</h4>
+          <p className="text-xs text-slate-500">Imagenes, PDF, Word o Excel asociados solo a este paso.</p>
         </div>
         <label className="inline-flex cursor-pointer items-center justify-center rounded-md border border-slate-700 px-3 py-2 text-sm text-slate-200 transition hover:border-cyan-500">
           {uploadState === 'uploading' ? 'Cargando...' : 'Adjuntar'}
