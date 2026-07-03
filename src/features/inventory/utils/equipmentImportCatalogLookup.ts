@@ -29,9 +29,40 @@ export function findImportLocationId(
   )
   const location = locations?.find((item) => {
     const label = [item.area, item.office, item.floor].filter(Boolean).join(' / ')
+    const orderedLabel = [item.area, item.floor, item.office].filter(Boolean).join(' / ')
 
-    return normalizeImportValue(item.id) === normalizedValue || normalizeImportValue(label) === normalizedValue
+    return (
+      normalizeImportValue(item.id) === normalizedValue ||
+      normalizeImportValue(label) === normalizedValue ||
+      normalizeImportValue(orderedLabel) === normalizedValue
+    )
   })
+
+  return location?.id
+}
+
+export function findImportLocationIdByParts(
+  filters: { area?: string; floor?: string; office?: string },
+  headquarterId: string | undefined,
+  catalogs: EquipmentCatalogs | null
+) {
+  const normalizedFloor = normalizeImportValue(filters.floor ?? '')
+  const normalizedArea = normalizeImportValue(filters.area ?? '')
+  const normalizedOffice = normalizeImportValue(filters.office ?? '')
+
+  if (!normalizedFloor && !normalizedArea && !normalizedOffice) {
+    return undefined
+  }
+
+  const locations = catalogs?.locations.filter(
+    (location) => !headquarterId || location.headquarterId === headquarterId
+  )
+  const location = locations?.find(
+    (item) =>
+      (!normalizedFloor || normalizeImportValue(item.floor ?? '') === normalizedFloor) &&
+      (!normalizedArea || normalizeImportValue(item.area ?? '') === normalizedArea) &&
+      (!normalizedOffice || normalizeImportValue(item.office ?? '') === normalizedOffice)
+  )
 
   return location?.id
 }

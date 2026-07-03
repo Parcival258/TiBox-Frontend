@@ -13,6 +13,7 @@ type AlertsPageProps = {
   onAcknowledge: (alertId: string) => void
   onAssign: (alertId: string, assignedTo: string) => void
   onDismiss: (alertId: string) => void
+  onOpenTarget: (alert: Alert) => void
   onResolve: (alertId: string) => void
   onRunChecks: () => void
   onSelfAssign: (alertId: string) => void

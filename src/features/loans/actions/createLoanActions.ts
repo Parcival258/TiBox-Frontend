@@ -7,6 +7,7 @@ import {
 } from '../services/loanService'
 import type {
   CreateEquipmentLoanPayload,
+  EquipmentLoan,
   RequestEquipmentLoanPayload,
   ReturnEquipmentLoanPayload,
 } from '../types'
@@ -15,21 +16,25 @@ type LoanActionDependencies = {
   refreshEquipmentLoans: () => Promise<unknown>
   refreshOperationalData: () => Promise<unknown>
   showSuccess: (message: string, subText?: string) => void
+  upsertEquipmentLoan: (loan: EquipmentLoan) => void
 }
 
 export function createLoanActions({
   refreshEquipmentLoans,
   refreshOperationalData,
   showSuccess,
+  upsertEquipmentLoan,
 }: LoanActionDependencies) {
   return {
     createEquipmentLoan: async (payload: CreateEquipmentLoanPayload) => {
-      await createEquipmentLoan(payload)
+      const loan = await createEquipmentLoan(payload)
+      upsertEquipmentLoan(loan)
       showSuccess('Prestamo registrado', 'El seguimiento quedo activo hasta la devolucion.')
       await refreshOperationalData()
     },
     requestEquipmentLoan: async (payload: RequestEquipmentLoanPayload) => {
-      await requestEquipmentLoan(payload)
+      const loan = await requestEquipmentLoan(payload)
+      upsertEquipmentLoan(loan)
       showSuccess('Solicitud enviada', 'El equipo de inventario revisara tu solicitud.')
       await refreshEquipmentLoans()
     },

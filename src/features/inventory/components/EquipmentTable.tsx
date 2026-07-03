@@ -6,6 +6,8 @@ import type {
 import type { EquipmentCatalogs } from '../types/equipmentCatalogs'
 import type { PaginationMeta } from '@/shared/types/pagination'
 import { InfoNotice } from '@/shared/ui/InfoNotice'
+import { AppLoader } from '@/shared/ui/Loaders'
+import type { LoadState } from '@/shared/types/ui'
 import type { EquipmentImportResult } from '@/features/inventory/utils/equipmentBulkImport'
 import {
   ContextActionMenu,
@@ -36,6 +38,7 @@ type EquipmentTableProps = {
   onSelectEquipment: (equipmentId: string) => void
   pagination: PaginationMeta | null
   selectedEquipmentId: string | null
+  status: LoadState
 }
 
 const inventoryTips = [
@@ -88,6 +91,7 @@ export function EquipmentTable({
   onSelectEquipment,
   pagination,
   selectedEquipmentId,
+  status,
 }: EquipmentTableProps) {
   const filterSearch = filters.search ?? ''
   const [searchInput, setSearchInput] = useState({ filter: filterSearch, value: filterSearch })
@@ -95,6 +99,7 @@ export function EquipmentTable({
   const [isExporting, setIsExporting] = useState(false)
   const [isImporting, setIsImporting] = useState(false)
   const [importResult, setImportResult] = useState<EquipmentImportResult | null>(null)
+  const [pendingImportFile, setPendingImportFile] = useState<File | null>(null)
   const [contextMenu, setContextMenu] = useState<ContextMenuState>(null)
   const [activeTip, setActiveTip] = useState(getInitialInventoryTip)
   const importInputRef = useRef<HTMLInputElement | null>(null)
@@ -143,14 +148,33 @@ export function EquipmentTable({
       return
     }
 
+    setPendingImportFile(file)
+    setImportResult(null)
+    event.target.value = ''
+  }
+
+  async function processPendingImport() {
+    if (!pendingImportFile) {
+      return
+    }
+
     setIsImporting(true)
     setImportResult(null)
 
     try {
-      setImportResult(await onImportEquipment(file))
+      setImportResult(await onImportEquipment(pendingImportFile))
+      setPendingImportFile(null)
     } finally {
       setIsImporting(false)
-      event.target.value = ''
+    }
+  }
+
+  function removePendingImportFile() {
+    setPendingImportFile(null)
+    setImportResult(null)
+
+    if (importInputRef.current) {
+      importInputRef.current.value = ''
     }
   }
 
@@ -165,11 +189,14 @@ export function EquipmentTable({
         isExportDisabled={isExporting || (pagination?.total ?? equipment.length) === 0}
         isExporting={isExporting}
         isImporting={isImporting}
+        pendingImportFileName={pendingImportFile?.name ?? null}
         totalRecords={pagination?.total ?? equipment.length}
         onCreateEquipment={onCreateEquipment}
         onDownloadImportTemplate={onDownloadImportTemplate}
         onExportEquipment={handleExport}
         onImportEquipment={handleImport}
+        onProcessImport={processPendingImport}
+        onRemoveImportFile={removePendingImportFile}
       />
 
       {canCreate && activeTip && (
@@ -192,27 +219,35 @@ export function EquipmentTable({
         onClearFilters={clearFilters}
       />
 
-      <EquipmentGrid
-        canDelete={canDelete}
-        canUpdate={canUpdate}
-        equipment={equipment}
-        selectedEquipmentId={selectedEquipmentId}
-        onDeleteEquipment={onDeleteEquipment}
-        onEditEquipment={onEditEquipment}
-        onOpenEquipmentDetails={onOpenEquipmentDetails}
-        onRestoreEquipment={onRestoreEquipment}
-        onSelectEquipment={onSelectEquipment}
-        onSetContextMenu={setContextMenu}
-      />
+      {status === 'loading' ? (
+        <div className="flex min-h-72 items-center justify-center px-4 py-12">
+          <AppLoader label="Cargando inventario..." />
+        </div>
+      ) : (
+        <EquipmentGrid
+          canDelete={canDelete}
+          canUpdate={canUpdate}
+          equipment={equipment}
+          selectedEquipmentId={selectedEquipmentId}
+          onDeleteEquipment={onDeleteEquipment}
+          onEditEquipment={onEditEquipment}
+          onOpenEquipmentDetails={onOpenEquipmentDetails}
+          onRestoreEquipment={onRestoreEquipment}
+          onSelectEquipment={onSelectEquipment}
+          onSetContextMenu={setContextMenu}
+        />
+      )}
 
       <ContextActionMenu menu={contextMenu} onClose={() => setContextMenu(null)} />
 
-      <EquipmentTablePagination
-        currentPage={currentPage}
-        filters={filters}
-        lastPage={lastPage}
-        onChangeFilters={onChangeFilters}
-      />
+      {status !== 'loading' && (
+        <EquipmentTablePagination
+          currentPage={currentPage}
+          filters={filters}
+          lastPage={lastPage}
+          onChangeFilters={onChangeFilters}
+        />
+      )}
     </div>
   )
 }

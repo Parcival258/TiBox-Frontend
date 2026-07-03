@@ -153,7 +153,7 @@ export function EquipmentLoansPage({
   }
 
   return (
-    <section className="grid flex-1 gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
+    <section className="grid min-w-0 flex-1 gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
       <LoanListPanel
         canCreate={canCreate}
         canReturn={canReturn}

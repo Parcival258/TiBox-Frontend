@@ -23,6 +23,7 @@ export function buildWorkspacePermissions(user: User | null) {
     canManageLocations: can(user, 'settings.locations.manage'),
     canManageEquipmentTypes: can(user, 'equipment.create') && can(user, 'equipment.update'),
     canManageUsers: user?.role?.slug === 'admin' && can(user, 'users.update'),
+    canManageSystemLogs: user?.role?.slug === 'admin',
     canViewSettings:
       can(user, 'settings.headquarters.view') ||
       can(user, 'settings.locations.view') ||

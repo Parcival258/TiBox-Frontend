@@ -18,7 +18,7 @@ export function EquipmentTablePagination({
       <span>
         Pagina {currentPage} de {lastPage}
       </span>
-      <div className="flex gap-2">
+      <div className="grid grid-cols-2 gap-2 sm:flex">
         <button
           className="rounded-md border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:border-slate-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
           disabled={currentPage <= 1}

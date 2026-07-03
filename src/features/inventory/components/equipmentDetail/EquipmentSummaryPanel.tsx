@@ -44,7 +44,7 @@ export function EquipmentSummaryPanel({
   const { equipment, summary } = lifeSheet
   const title = [equipment.brand, equipment.model].filter(Boolean).join(' ') || equipment.type
   const location =
-    [equipment.headquarter?.name, equipment.location?.area, equipment.location?.office]
+    [equipment.headquarter?.name, equipment.location?.floor, equipment.location?.area, equipment.location?.office]
       .filter(Boolean)
       .join(' / ') || 'Sin ubicacion'
 

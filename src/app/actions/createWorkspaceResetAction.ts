@@ -6,7 +6,13 @@ import type { EquipmentCatalogs, EquipmentType } from '@/features/inventory/type
 import type { Equipment, EquipmentFilters } from '@/features/inventory/types/equipmentCore'
 import type { EquipmentLifeSheet } from '@/features/inventory/types/equipmentLifeSheet'
 import type { EquipmentLoan, LoanEquipment } from '@/features/loans/types'
-import type { MaintenanceSchedule, MaintenanceScheduleCatalogs } from '@/features/maintenance/types'
+import type {
+  EquipmentGroup,
+  MaintenanceFilters,
+  MaintenanceRecord,
+  MaintenanceSchedule,
+  MaintenanceScheduleCatalogs,
+} from '@/features/maintenance/types'
 import type { Headquarter, Location } from '@/features/settings/types'
 import type { PaginationMeta } from '@/shared/types/pagination'
 import type { ActiveView, LifeSheetState, LoadState, ModuleState } from '@/shared/types/ui'
@@ -20,6 +26,7 @@ type WorkspaceResetDependencies = {
   setEditingEquipment: (equipment: Equipment | null) => void
   setEquipment: (equipment: Equipment[]) => void
   setEquipmentCatalogs: (catalogs: EquipmentCatalogs | null) => void
+  setEquipmentGroups: (groups: EquipmentGroup[]) => void
   setEquipmentFilters: (filters: EquipmentFilters) => void
   setEquipmentFormMode: (mode: 'create' | 'edit') => void
   setEquipmentLoans: (loans: EquipmentLoan[]) => void
@@ -33,6 +40,8 @@ type WorkspaceResetDependencies = {
   setLifeSheetStatus: (status: LifeSheetState) => void
   setLocations: (locations: Location[]) => void
   setMaintenanceCatalogs: (catalogs: MaintenanceScheduleCatalogs | null) => void
+  setMaintenanceFilters: (filters: MaintenanceFilters) => void
+  setMaintenanceRecords: (records: MaintenanceRecord[]) => void
   setMaintenanceSchedules: (schedules: MaintenanceSchedule[]) => void
   setMaintenanceStatus: (status: ModuleState) => void
   setRequestableEquipment: (equipment: LoanEquipment[]) => void
@@ -49,6 +58,7 @@ export function createWorkspaceResetAction({
   setEditingEquipment,
   setEquipment,
   setEquipmentCatalogs,
+  setEquipmentGroups,
   setEquipmentFilters,
   setEquipmentFormMode,
   setEquipmentLoans,
@@ -62,6 +72,8 @@ export function createWorkspaceResetAction({
   setLifeSheetStatus,
   setLocations,
   setMaintenanceCatalogs,
+  setMaintenanceFilters,
+  setMaintenanceRecords,
   setMaintenanceSchedules,
   setMaintenanceStatus,
   setRequestableEquipment,
@@ -78,6 +90,9 @@ export function createWorkspaceResetAction({
     setEquipmentLoans([])
     setRequestableEquipment([])
     setMaintenanceCatalogs(null)
+    setMaintenanceFilters({})
+    setMaintenanceRecords([])
+    setEquipmentGroups([])
     setAlerts([])
     setEditingEquipment(null)
     setSelectedEquipmentId(null)

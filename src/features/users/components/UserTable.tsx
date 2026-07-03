@@ -3,22 +3,16 @@ import { AppLoader } from '@/shared/ui/Loaders'
 import type { User } from '../types'
 
 type UserTableProps = {
-  currentUserId: string | null
   filteredUsers: User[]
   status: 'loading' | 'ready' | 'error'
   totalUsers: number
-  onDelete: (user: User) => void
-  onEdit: (user: User) => void
-  onOpenContextMenu: (user: User, event: MouseEvent<HTMLTableRowElement>) => void
+  onOpenContextMenu: (user: User, event: MouseEvent<HTMLElement>) => void
 }
 
 export function UserTable({
-  currentUserId,
   filteredUsers,
   status,
   totalUsers,
-  onDelete,
-  onEdit,
   onOpenContextMenu,
 }: UserTableProps) {
   if (status === 'loading') {
@@ -38,11 +32,48 @@ export function UserTable({
   }
 
   return (
-    <div className="overflow-x-auto">
+    <div>
       <div className="border-b border-slate-800 px-4 py-3 text-sm text-slate-400">
         {filteredUsers.length} de {totalUsers} usuario{totalUsers === 1 ? '' : 's'}
       </div>
-      <table className="w-full min-w-[900px] text-left text-sm">
+      <div className="grid gap-3 p-3 md:hidden">
+        {filteredUsers.length === 0 ? (
+          <div className="px-4 py-12 text-center text-sm text-slate-400">
+            No hay usuarios que coincidan con la busqueda.
+          </div>
+        ) : (
+          filteredUsers.map((user) => (
+            <article
+              className="rounded-lg border border-slate-800 bg-slate-950/70 p-3"
+              key={user.id}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="break-words text-sm font-semibold text-white">{user.name}</p>
+                  <p className="mt-1 break-words text-sm text-slate-300">{user.email}</p>
+                </div>
+                <UserStatusPill isActive={user.isActive ?? true} />
+              </div>
+              <dl className="mt-3 grid gap-2 text-xs">
+                <UserCardField label="Rol" value={user.role?.name ?? 'Sin rol'} />
+                <UserCardField
+                  label="Area"
+                  value={[user.department, user.jobTitle].filter(Boolean).join(' / ') || 'Sin dato'}
+                />
+              </dl>
+              <button
+                className="mt-3 rounded-md border border-cyan-700 px-3 py-1.5 text-sm font-medium text-cyan-100 transition hover:border-cyan-400"
+                type="button"
+                onClick={(event) => onOpenContextMenu(user, event)}
+              >
+                Acciones
+              </button>
+            </article>
+          ))
+        )}
+      </div>
+      <div className="hidden overflow-x-auto md:block">
+      <table className="w-full min-w-[760px] text-left text-sm">
         <thead className="bg-slate-950 text-slate-400">
           <tr>
             <th className="px-4 py-3 font-medium">Nombre</th>
@@ -50,13 +81,12 @@ export function UserTable({
             <th className="px-4 py-3 font-medium">Rol</th>
             <th className="px-4 py-3 font-medium">Area</th>
             <th className="px-4 py-3 font-medium">Estado</th>
-            <th className="px-4 py-3 font-medium">Acciones</th>
           </tr>
         </thead>
         <tbody>
           {filteredUsers.length === 0 ? (
             <tr>
-              <td className="px-4 py-12 text-center text-slate-400" colSpan={6}>
+              <td className="px-4 py-12 text-center text-slate-400" colSpan={5}>
                 No hay usuarios que coincidan con la busqueda.
               </td>
             </tr>
@@ -77,22 +107,21 @@ export function UserTable({
                 <td className="px-4 py-3">
                   <UserStatusPill isActive={user.isActive ?? true} />
                 </td>
-                <td className="px-4 py-3">
-                  <div className="flex flex-wrap gap-2">
-                    <UserActionButton label="Editar" onClick={() => onEdit(user)} />
-                    <UserActionButton
-                      disabled={user.id === currentUserId}
-                      label="Desactivar"
-                      tone="danger"
-                      onClick={() => onDelete(user)}
-                    />
-                  </div>
-                </td>
               </tr>
             ))
           )}
         </tbody>
       </table>
+      </div>
+    </div>
+  )
+}
+
+function UserCardField({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <dt className="text-slate-500">{label}</dt>
+      <dd className="mt-0.5 break-words text-slate-300">{value}</dd>
     </div>
   )
 }
@@ -106,32 +135,5 @@ function UserStatusPill({ isActive }: { isActive: boolean }) {
     }`}>
       {isActive ? 'Activo' : 'Inactivo'}
     </span>
-  )
-}
-
-function UserActionButton({
-  label,
-  onClick,
-  disabled,
-  tone = 'default',
-}: {
-  disabled?: boolean
-  label: string
-  onClick: () => void
-  tone?: 'default' | 'danger'
-}) {
-  const toneClass = tone === 'danger'
-    ? 'border-red-800 text-red-200 hover:border-red-500'
-    : 'border-slate-700 text-slate-300 hover:border-cyan-500'
-
-  return (
-    <button
-      className={`rounded-md border px-3 py-1.5 text-xs font-medium transition hover:text-white disabled:cursor-not-allowed disabled:opacity-40 ${toneClass}`}
-      disabled={disabled}
-      type="button"
-      onClick={onClick}
-    >
-      {label}
-    </button>
   )
 }

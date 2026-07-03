@@ -63,7 +63,7 @@ export function EquipmentLifeSheet({
   )
 
   return (
-    <aside className="space-y-4 rounded-lg border border-slate-800 bg-slate-900 p-5">
+    <aside className="space-y-4 rounded-lg border border-slate-800 bg-slate-900 p-3 sm:p-5">
       <div>
         <p className="text-xs uppercase tracking-wide text-cyan-300">Hoja de vida</p>
         <h2 className="mt-1 text-xl font-semibold text-white">{equipment.internalCode}</h2>
@@ -78,7 +78,7 @@ export function EquipmentLifeSheet({
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-3 text-sm">
+      <div className="grid grid-cols-1 gap-3 text-sm min-[380px]:grid-cols-2">
         <Metric label="Mantenimientos" value={summary.totalMaintenanceRecords} />
         <Metric label="Fallas abiertas" value={summary.openFailureReports} />
         <Metric label="Asignaciones" value={summary.totalAssignments} />

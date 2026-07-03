@@ -1,13 +1,15 @@
 import { AlertsPage, MyCasesPage } from '@/features/alerts'
+import { ChatPage } from '@/features/chat'
 import { InventoryPage } from '@/features/inventory'
 import { EquipmentLoansPage } from '@/features/loans'
 import { MaintenancePage } from '@/features/maintenance'
-import { ConfigurationPage, HeadquartersPage } from '@/features/settings'
+import { ConfigurationPage, HeadquartersPage, SystemLogsPage } from '@/features/settings'
 import { UserManagementPage } from '@/features/users'
 import type { useWorkspaceController } from './hooks/useWorkspaceController'
 import type { User } from '@/features/users/types'
 import type { UserPreferences } from '@/shared/types/ui'
 import type { ConfirmAction } from './hooks/useConfirmAction'
+import type { Alert } from '@/features/alerts/types'
 
 type Workspace = ReturnType<typeof useWorkspaceController>
 
@@ -27,6 +29,27 @@ export function AppView({
   workspace,
 }: AppViewProps) {
   const { actions, notifications, permissions, state } = workspace
+
+  function openAlertTarget(alert: Alert) {
+    const targetView = alertTargetView(alert)
+
+    if (targetView === 'loans' && permissions.canViewEquipmentLoans) {
+      actions.setActiveView('loans')
+      return
+    }
+
+    if (targetView === 'maintenance' && permissions.canViewMaintenance) {
+      actions.setActiveView('maintenance')
+      return
+    }
+
+    if (targetView === 'cases' && permissions.canViewAlerts) {
+      actions.setActiveView('cases')
+      return
+    }
+
+    actions.setActiveView('inventory')
+  }
 
   return (
     <div className="app-view-transition" key={state.activeView}>
@@ -49,6 +72,7 @@ export function AppView({
           lifeSheetStatus={state.lifeSheetStatus}
           pagination={state.equipmentMeta}
           selectedEquipmentId={state.selectedEquipmentId}
+          status={state.status}
           onAssignEquipment={actions.assignEquipment}
           onChangeFilters={actions.handleChangeEquipmentFilters}
           onCreateEquipment={actions.openCreateEquipment}
@@ -106,8 +130,29 @@ export function AppView({
           canClose={permissions.canCloseMaintenance}
           canCreate={permissions.canCreateMaintenance}
           canUpdate={permissions.canUpdateMaintenance}
+          catalogs={state.equipmentCatalogs}
+          equipment={state.equipment}
+          equipmentGroups={state.equipmentGroups}
+          filters={state.maintenanceFilters}
+          records={state.maintenanceRecords}
           schedules={state.maintenanceSchedules}
           status={state.maintenanceStatus}
+          onChangeFilters={(filters) => {
+            actions.setMaintenanceFilters(filters)
+            actions.refreshMaintenanceRecords(filters)
+          }}
+          onCreateGroup={async (payload) => {
+            await actions.createEquipmentGroup(payload)
+            actions.refreshMaintenanceRecords()
+          }}
+          onDeleteGroup={async (groupId) => {
+            await actions.deleteEquipmentGroup(groupId)
+            actions.refreshMaintenanceRecords()
+          }}
+          onUpdateGroup={async (groupId, payload) => {
+            await actions.updateEquipmentGroup(groupId, payload)
+            actions.refreshMaintenanceRecords()
+          }}
           onCancel={(scheduleId) =>
             actions.handleScheduleAction(() => actions.cancelMaintenanceSchedule(scheduleId))
           }
@@ -124,6 +169,24 @@ export function AppView({
           onStart={(scheduleId) =>
             actions.handleScheduleAction(() => actions.startMaintenanceSchedule(scheduleId))
           }
+          onUpdateClosure={async (recordId, payload) => {
+            await actions.updateMaintenanceClosure(recordId, payload)
+            actions.refreshMaintenanceRecords()
+          }}
+          onUpdateExecution={async (recordId, payload) => {
+            await actions.updateMaintenanceExecution(recordId, payload)
+            actions.refreshMaintenanceRecords()
+          }}
+          onUpdateReception={async (recordId, payload) => {
+            await actions.updateMaintenanceReception(recordId, payload)
+            actions.refreshMaintenanceRecords()
+          }}
+          onUploadEvidence={async (recordId, stage, file) => {
+            await actions.uploadMaintenanceAttachment(recordId, stage, file)
+          }}
+          onDeleteEvidence={async (recordId, attachmentId) => {
+            await actions.deleteMaintenanceAttachment(recordId, attachmentId)
+          }}
         />
       )}
 
@@ -170,8 +233,15 @@ export function AppView({
         />
       )}
 
+      {state.activeView === 'systemLogs' && permissions.canManageSystemLogs && (
+        <SystemLogsPage requestConfirmation={requestConfirmation} />
+      )}
+
       {state.activeView === 'users' && permissions.canManageUsers && (
-        <UserManagementPage currentUserId={user?.id ?? null} />
+        <UserManagementPage
+          currentUserId={user?.id ?? null}
+          requestConfirmation={requestConfirmation}
+        />
       )}
 
       {state.activeView === 'alerts' && permissions.canViewAlerts && (
@@ -191,6 +261,7 @@ export function AppView({
           onDismiss={(alertId) =>
             actions.handleAlertAction(() => actions.dismissAlert(alertId), 'Alerta quitada')
           }
+          onOpenTarget={openAlertTarget}
           onResolve={(alertId) =>
             actions.handleAlertAction(() => actions.resolveAlert(alertId), 'Alerta resuelta')
           }
@@ -222,6 +293,30 @@ export function AppView({
           }}
         />
       )}
+
+      {state.activeView === 'chat' && (
+        <ChatPage
+          chat={workspace.chat}
+          currentUserId={user?.id ?? null}
+          requestConfirmation={requestConfirmation}
+        />
+      )}
     </div>
   )
+}
+
+function alertTargetView(alert: Alert) {
+  if (alert.entityType === 'equipment_loan' || alert.type.startsWith('equipment_loan_')) {
+    return 'loans'
+  }
+
+  if (alert.entityType === 'maintenance_schedule' || alert.type.includes('maintenance')) {
+    return 'maintenance'
+  }
+
+  if (alert.entityType === 'failure_report' || alert.type === 'damaged_equipment_reported') {
+    return 'cases'
+  }
+
+  return 'inventory'
 }

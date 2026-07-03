@@ -2,6 +2,7 @@ import { useRealtimeAlerts } from '@/shared/hooks/useRealtimeAlerts'
 import type { User } from '@/features/users/types'
 
 type WorkspaceRealtimePermissions = {
+  canAssignEquipment: boolean
   canManageAlerts: boolean
   canManageFailureReports: boolean
   canViewAlerts: boolean
@@ -38,11 +39,14 @@ export function useWorkspaceRealtimeAlerts({
   useRealtimeAlerts({
     canHandleFailureQueue: permissions.canManageFailureReports,
     canManageAlerts: permissions.canManageAlerts,
+    canManageLoanRequests: permissions.canAssignEquipment,
     canTrackReportedTickets: permissions.canViewFailureReports,
     canViewAlerts: permissions.canViewAlerts,
     enabled:
       authStatus === 'authenticated' &&
-      (permissions.canViewAlerts || permissions.canViewFailureReports),
+      (permissions.canViewAlerts ||
+        permissions.canViewFailureReports ||
+        permissions.canAssignEquipment),
     onDashboardRefresh: refreshers.refreshDashboard,
     onNotify: notificationInbox.addNotification,
     onRefresh: refreshers.refreshAlerts,

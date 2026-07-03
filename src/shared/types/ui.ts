@@ -4,9 +4,11 @@ export type ActiveView =
   | 'maintenance'
   | 'headquarters'
   | 'settings'
+  | 'systemLogs'
   | 'users'
   | 'cases'
   | 'alerts'
+  | 'chat'
 
 export type AuthState = 'checking' | 'authenticated' | 'guest' | 'submitting'
 export type LifeSheetState = 'idle' | 'loading' | 'ready' | 'error'
@@ -14,6 +16,7 @@ export type LoadState = 'loading' | 'ready' | 'error'
 export type ModuleState = 'loading' | 'ready' | 'error'
 export type ThemeMode = 'dark' | 'light'
 export type InterfaceDensity = 'compact' | 'comfortable' | 'spacious'
+export type DashboardStatsSize = 'compact' | 'medium' | 'large'
 
 export type UserPreferences = {
   density: InterfaceDensity
@@ -21,5 +24,7 @@ export type UserPreferences = {
   notificationsEnabled: boolean
   notificationSoundEnabled: boolean
   reduceMotion: boolean
+  dashboardStatsSize: DashboardStatsSize
+  showDashboardStats: boolean
   theme: ThemeMode
 }

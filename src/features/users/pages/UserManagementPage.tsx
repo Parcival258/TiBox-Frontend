@@ -3,8 +3,16 @@ import {
   ContextActionMenu,
   type ContextMenuState,
 } from '@/shared/ui/contextActionMenu/ContextActionMenu'
+import type { ConfirmAction } from '@/app/hooks/useConfirmAction'
 import { AddItemButton } from '@/features/settings/components/settings/AddItemButton'
-import { createUser, deleteUser, getUserRoles, getUsers, updateUser } from '@/features/users/services/usersService'
+import {
+  createUser,
+  deleteUser,
+  getUserRoles,
+  getUsers,
+  reactivateUser,
+  updateUser,
+} from '@/features/users/services/usersService'
 import type { RoleOption, User, UserPayload } from '../types'
 import { UserFilters } from '../components/UserFilters'
 import { UserFormPanel } from '../components/UserFormPanel'
@@ -18,13 +26,18 @@ import {
 
 type UserManagementPageProps = {
   currentUserId: string | null
+  requestConfirmation: (action: ConfirmAction) => void
 }
 
-export function UserManagementPage({ currentUserId }: UserManagementPageProps) {
+export function UserManagementPage({
+  currentUserId,
+  requestConfirmation,
+}: UserManagementPageProps) {
   const [users, setUsers] = useState<User[]>([])
   const [roles, setRoles] = useState<RoleOption[]>([])
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
   const [submitState, setSubmitState] = useState<'idle' | 'submitting' | 'error'>('idle')
+  const [submitError, setSubmitError] = useState<string | null>(null)
   const [departmentFilter, setDepartmentFilter] = useState('')
   const [roleFilter, setRoleFilter] = useState('')
   const [search, setSearch] = useState('')
@@ -86,6 +99,7 @@ export function UserManagementPage({ currentUserId }: UserManagementPageProps) {
     setEditingUser(null)
     setForm(emptyUserForm)
     setSubmitState('idle')
+    setSubmitError(null)
     setIsFormOpen(true)
   }
 
@@ -93,6 +107,7 @@ export function UserManagementPage({ currentUserId }: UserManagementPageProps) {
     setEditingUser(user)
     setForm(userToForm(user))
     setSubmitState('idle')
+    setSubmitError(null)
     setIsFormOpen(true)
   }
 
@@ -101,6 +116,7 @@ export function UserManagementPage({ currentUserId }: UserManagementPageProps) {
     setEditingUser(null)
     setForm(emptyUserForm)
     setSubmitState('idle')
+    setSubmitError(null)
   }
 
   function setField<Key extends keyof UserForm>(key: Key, value: UserForm[Key]) {
@@ -110,38 +126,76 @@ export function UserManagementPage({ currentUserId }: UserManagementPageProps) {
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
     setSubmitState('submitting')
+    setSubmitError(null)
 
     const payload = userFormToPayload(form)
 
     try {
-      const savedUser = editingUser
-        ? await updateUser(editingUser.id, payload)
-        : await createUser(payload as UserPayload & { password: string })
-
-      setUsers((current) =>
-        editingUser
-          ? current.map((user) => (user.id === savedUser.id ? savedUser : user))
-          : [...current, savedUser].sort((a, b) => a.name.localeCompare(b.name))
-      )
+      if (editingUser) {
+        const savedUser = await updateUser(editingUser.id, payload)
+        setUsers((current) =>
+          current.map((user) => (user.id === savedUser.id ? savedUser : user))
+        )
+      } else {
+        const savedUser = await createUser(payload as UserPayload & { password: string })
+        setUsers((current) =>
+          [...current.filter((user) => user.id !== savedUser.id), savedUser]
+            .sort((left, right) => left.name.localeCompare(right.name))
+        )
+      }
       closeForm()
-    } catch {
+    } catch (error) {
       setSubmitState('error')
+      setSubmitError(
+        error instanceof Error && error.message === 'HTTP 409'
+          ? 'Ya existe un usuario registrado con este correo.'
+          : 'No fue posible guardar el usuario. Revisa el correo, rol o permisos.'
+      )
     }
   }
 
-  async function handleDelete(user: User) {
-    const shouldDelete = window.confirm(`Desactivar el usuario ${user.name}?`)
-
-    if (!shouldDelete) {
-      return
-    }
-
+  async function deactivateUser(user: User) {
     await deleteUser(user.id)
-    setUsers((current) => current.filter((item) => item.id !== user.id))
+    setUsers((current) =>
+      current.map((item) =>
+        item.id === user.id ? { ...item, isActive: false } : item
+      )
+    )
   }
 
-  function openContextMenu(user: User, event: MouseEvent<HTMLTableRowElement>) {
+  async function restoreUser(user: User) {
+    const savedUser = await reactivateUser(user.id)
+    setUsers((current) =>
+      current.map((item) => (item.id === savedUser.id ? savedUser : item))
+    )
+  }
+
+  function requestDeactivateUser(user: User) {
+    requestConfirmation({
+      confirmLabel: 'Desactivar usuario',
+      message: `El usuario ${user.name} quedara inactivo y no podra iniciar sesion hasta que sea reactivado.`,
+      onConfirm: () => {
+        void deactivateUser(user)
+      },
+      title: 'Confirmar desactivacion',
+    })
+  }
+
+  function requestRestoreUser(user: User) {
+    requestConfirmation({
+      confirmLabel: 'Reactivar usuario',
+      message: `El usuario ${user.name} volvera a estar activo y podra usar el sistema segun su rol.`,
+      onConfirm: () => {
+        void restoreUser(user)
+      },
+      title: 'Confirmar reactivacion',
+    })
+  }
+
+  function openContextMenu(user: User, event: MouseEvent<HTMLElement>) {
     event.preventDefault()
+    const isActive = user.isActive ?? true
+
     setContextMenu({
       x: event.clientX,
       y: event.clientY,
@@ -151,14 +205,22 @@ export function UserManagementPage({ currentUserId }: UserManagementPageProps) {
           label: 'Editar',
           onSelect: () => openEditForm(user),
         },
-        {
-          disabled: user.id === currentUserId,
-          icon: 'trash',
-          label: 'Desactivar',
-          onSelect: () => handleDelete(user),
-          separatorBefore: true,
-          tone: 'danger',
-        },
+        isActive
+          ? {
+              disabled: user.id === currentUserId,
+              icon: 'trash',
+              label: 'Desactivar',
+              onSelect: () => requestDeactivateUser(user),
+              separatorBefore: true,
+              tone: 'danger',
+            }
+          : {
+              icon: 'check',
+              label: 'Reactivar',
+              onSelect: () => requestRestoreUser(user),
+              separatorBefore: true,
+              tone: 'success',
+            },
       ],
     })
   }
@@ -190,12 +252,9 @@ export function UserManagementPage({ currentUserId }: UserManagementPageProps) {
       />
 
       <UserTable
-        currentUserId={currentUserId}
         filteredUsers={filteredUsers}
         status={status}
         totalUsers={users.length}
-        onDelete={handleDelete}
-        onEdit={openEditForm}
         onOpenContextMenu={openContextMenu}
       />
 
@@ -206,6 +265,7 @@ export function UserManagementPage({ currentUserId }: UserManagementPageProps) {
           editingUser={editingUser}
           form={form}
           roles={roles}
+          submitError={submitError}
           submitState={submitState}
           onClose={closeForm}
           onFieldChange={setField}

@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 
 export type NotificationItem = {
+  action?: {
+    conversationId?: string
+    type: 'chat'
+  }
   createdAt: string
   id: string
   readAt: string | null

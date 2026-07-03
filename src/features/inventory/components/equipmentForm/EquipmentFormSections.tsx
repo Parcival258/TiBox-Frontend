@@ -1,4 +1,5 @@
 import type { EquipmentCatalogs } from '../../types/equipmentCatalogs'
+import type { LocationSelectorOptions, LocationSelectorState } from '../EquipmentFormModal'
 import { FieldGroup, Input, Select, Textarea } from './EquipmentFormFields'
 import type { EquipmentFormState } from './equipmentFormState'
 import { statusOptions } from './equipmentFormState'
@@ -6,18 +7,24 @@ import { statusOptions } from './equipmentFormState'
 type EquipmentFormSectionsProps = {
   catalogs: EquipmentCatalogs | null
   form: EquipmentFormState
-  locationOptions: Array<{ label: string; value: string }>
+  locationOptions: LocationSelectorOptions
+  locationSelector: LocationSelectorState
   onChangeField: <Key extends keyof EquipmentFormState>(
     key: Key,
     value: EquipmentFormState[Key]
   ) => void
+  onChangeLocationArea: (value: string) => void
+  onChangeLocationFloor: (value: string) => void
 }
 
 export function EquipmentFormSections({
   catalogs,
   form,
   locationOptions,
+  locationSelector,
   onChangeField,
+  onChangeLocationArea,
+  onChangeLocationFloor,
 }: EquipmentFormSectionsProps) {
   return (
     <div className="grid gap-5 p-5 lg:grid-cols-3">
@@ -96,10 +103,25 @@ export function EquipmentFormSections({
           }))}
         />
         <Select
-          label="Ubicacion"
+          disabled={!form.headquarterId}
+          label="Piso"
+          value={locationSelector.floor}
+          onChange={onChangeLocationFloor}
+          options={locationOptions.floors}
+        />
+        <Select
+          disabled={!locationSelector.floor}
+          label="Area"
+          value={locationSelector.area}
+          onChange={onChangeLocationArea}
+          options={locationOptions.areas}
+        />
+        <Select
+          disabled={!locationSelector.floor || !locationSelector.area}
+          label="Oficina"
           value={form.locationId}
           onChange={(value) => onChangeField('locationId', value)}
-          options={locationOptions}
+          options={locationOptions.offices}
         />
         <Select
           label="Responsable"

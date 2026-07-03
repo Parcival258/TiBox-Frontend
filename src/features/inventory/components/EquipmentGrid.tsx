@@ -39,7 +39,24 @@ export function EquipmentGrid({
   }
 
   return (
-    <div className="overflow-x-auto">
+    <>
+      <div className="grid gap-3 p-3 md:hidden">
+        {equipment.map((item) => (
+          <EquipmentCard
+            canDelete={canDelete}
+            canUpdate={canUpdate}
+            equipment={item}
+            isSelected={item.id === selectedEquipmentId}
+            key={item.id}
+            onDeleteEquipment={onDeleteEquipment}
+            onEditEquipment={onEditEquipment}
+            onOpenEquipmentDetails={onOpenEquipmentDetails}
+            onRestoreEquipment={onRestoreEquipment}
+            onSelectEquipment={onSelectEquipment}
+          />
+        ))}
+      </div>
+      <div className="hidden overflow-x-auto md:block">
       <table className="w-full min-w-[980px] table-fixed text-left text-sm">
         <colgroup>
           <col className="w-[9%]" />
@@ -81,6 +98,134 @@ export function EquipmentGrid({
           ))}
         </tbody>
       </table>
+      </div>
+    </>
+  )
+}
+
+function EquipmentCard({
+  canDelete,
+  canUpdate,
+  equipment,
+  isSelected,
+  onDeleteEquipment,
+  onEditEquipment,
+  onOpenEquipmentDetails,
+  onRestoreEquipment,
+  onSelectEquipment,
+}: {
+  canDelete: boolean
+  canUpdate: boolean
+  equipment: Equipment
+  isSelected: boolean
+  onDeleteEquipment: (equipmentId: string) => void
+  onEditEquipment: (equipment: Equipment) => void
+  onOpenEquipmentDetails: (equipmentId: string) => void
+  onRestoreEquipment: (equipmentId: string) => void
+  onSelectEquipment: (equipmentId: string) => void
+}) {
+  const isRetired = equipment.status === 'retired'
+  const equipmentName = [equipment.brand, equipment.model].filter(Boolean).join(' ') || equipment.type
+  const location =
+    [equipment.headquarter?.name, equipment.location?.floor, equipment.location?.area, equipment.location?.office]
+      .filter(Boolean)
+      .join(' / ') || 'Sin ubicacion'
+  const responsible =
+    [equipment.currentResponsible?.name, equipment.secondaryResponsible?.name]
+      .filter(Boolean)
+      .join(' / ') || 'Sin asignar'
+
+  return (
+    <article
+      className={`rounded-lg border p-3 ${
+        isSelected
+          ? 'border-cyan-800 bg-cyan-950/30'
+          : 'border-slate-800 bg-slate-950/70'
+      }`}
+      onClick={() => onSelectEquipment(equipment.id)}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="break-words text-sm font-semibold text-white">{equipment.internalCode}</p>
+          <p className="mt-1 break-words text-sm text-slate-300">{equipmentName}</p>
+        </div>
+        <span className="shrink-0 rounded-md border border-slate-700 px-2 py-1 text-xs text-slate-300">
+          {equipmentStatusLabel(equipment.status)}
+        </span>
+      </div>
+
+      <dl className="mt-3 grid gap-2 text-xs">
+        <EquipmentCardField label="Serial" value={equipment.serial} />
+        <EquipmentCardField label="Red" value={equipment.ipAddresses || equipment.macAddress || 'Sin red'} />
+        <EquipmentCardField
+          label="Hardware"
+          value={
+            [equipment.processor, equipment.storageType, formatStorage(equipment.storageCapacityGb)]
+              .filter(Boolean)
+              .join(' / ') || 'Sin hardware'
+          }
+        />
+        <EquipmentCardField label="Ubicacion" value={location} />
+        <EquipmentCardField label="Responsable" value={responsible} />
+      </dl>
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button
+          className="rounded-md border border-cyan-700 px-3 py-1.5 text-sm font-medium text-cyan-100 transition hover:border-cyan-400"
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation()
+            onOpenEquipmentDetails(equipment.id)
+          }}
+        >
+          Detalle
+        </button>
+        {canUpdate && !isRetired && (
+          <button
+            className="rounded-md border border-slate-700 px-3 py-1.5 text-sm font-medium text-slate-200 transition hover:border-slate-500"
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation()
+              onEditEquipment(equipment)
+            }}
+          >
+            Editar
+          </button>
+        )}
+        {canDelete && !isRetired && (
+          <button
+            className="rounded-md border border-red-900 px-3 py-1.5 text-sm font-medium text-red-200 transition hover:border-red-500"
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation()
+              onDeleteEquipment(equipment.id)
+            }}
+          >
+            Retirar
+          </button>
+        )}
+        {canUpdate && isRetired && (
+          <button
+            className="rounded-md border border-emerald-700 px-3 py-1.5 text-sm font-medium text-emerald-100 transition hover:border-emerald-400"
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation()
+              onRestoreEquipment(equipment.id)
+            }}
+          >
+            Reintegrar
+          </button>
+        )}
+      </div>
+    </article>
+  )
+}
+
+function EquipmentCardField({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <dt className="text-slate-500">{label}</dt>
+      <dd className="mt-0.5 break-words text-slate-300">{value}</dd>
     </div>
   )
 }
@@ -189,7 +334,7 @@ function EquipmentGridRow({
         {equipmentStatusLabel(equipment.status)}
       </td>
       <td className="break-words px-4 py-3 text-slate-300">
-        {[equipment.headquarter?.name, equipment.location?.area, equipment.location?.office]
+        {[equipment.headquarter?.name, equipment.location?.floor, equipment.location?.area, equipment.location?.office]
           .filter(Boolean)
           .join(' / ') || 'Sin ubicacion'}
       </td>

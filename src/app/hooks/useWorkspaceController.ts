@@ -20,8 +20,10 @@ import { alertMetrics } from '@/shared/utils/alertMetrics'
 import { buildWorkspacePermissions } from '@/app/hooks/workspacePermissions'
 import { useInventoryState } from '@/features/inventory/hooks/useInventoryState'
 import { useLoansState } from '@/features/loans/hooks/useLoansState'
+import { useRealtimeEquipmentLoans } from '@/features/loans/hooks/useRealtimeEquipmentLoans'
 import { useMaintenanceState } from '@/features/maintenance/hooks/useMaintenanceState'
 import { useAlertsState } from '@/features/alerts/hooks/useAlertsState'
+import { useChatState } from '@/features/chat'
 import { useSettingsState } from '@/features/settings/hooks/useSettingsState'
 import { useWorkspaceNavigation } from './useWorkspaceNavigation'
 import { createSettingsActions } from '@/features/settings/actions/createSettingsActions'
@@ -65,8 +67,10 @@ export function useWorkspaceController({
   const { equipmentTypes, headquarters, locations, setEquipmentTypes, setHeadquarters, setLocations } =
     useSettingsState()
   const {
-    isScheduleFormOpen, maintenanceCatalogs, maintenanceSchedules, maintenanceStatus,
-    setIsScheduleFormOpen, setMaintenanceCatalogs, setMaintenanceSchedules, setMaintenanceStatus,
+    equipmentGroups, isScheduleFormOpen, maintenanceCatalogs, maintenanceFilters,
+    maintenanceRecords, maintenanceSchedules, maintenanceStatus, setEquipmentGroups,
+    setIsScheduleFormOpen, setMaintenanceCatalogs, setMaintenanceFilters,
+    setMaintenanceRecords, setMaintenanceSchedules, setMaintenanceStatus,
   } = useMaintenanceState()
   const {
     equipmentLoans, equipmentLoansStatus, requestableEquipment, setEquipmentLoans,
@@ -79,6 +83,12 @@ export function useWorkspaceController({
     notificationsEnabled,
     notificationSoundEnabled
   )
+  const chat = useChatState({
+    authStatus,
+    isChatViewActive: activeView === 'chat',
+    onNotify: notificationInbox.addNotification,
+    userId: user?.id ?? null,
+  })
 
   const permissions = buildWorkspacePermissions(user)
 
@@ -98,6 +108,7 @@ export function useWorkspaceController({
     setDashboard,
     setEquipment,
     setEquipmentCatalogs,
+    setEquipmentGroups,
     setEquipmentLoans,
     setEquipmentLoansStatus,
     setEquipmentMeta,
@@ -106,11 +117,19 @@ export function useWorkspaceController({
     setLifeSheet,
     setLifeSheetStatus,
     setLocations,
+    setMaintenanceRecords,
     setMaintenanceSchedules,
     setMaintenanceStatus,
     setRequestableEquipment,
     setStatus,
   })
+
+  function upsertEquipmentLoan(loan: typeof equipmentLoans[number]) {
+    setEquipmentLoans((current) => [
+      loan,
+      ...current.filter((item) => item.id !== loan.id),
+    ])
+  }
 
   const settingsActions = createSettingsActions({
     refreshCoreData: refreshers.refreshCoreData,
@@ -121,10 +140,14 @@ export function useWorkspaceController({
     refreshEquipmentLoans: refreshers.refreshEquipmentLoans,
     refreshOperationalData: refreshers.refreshOperationalData,
     showSuccess,
+    upsertEquipmentLoan,
   })
   const maintenanceActions = createMaintenanceActions({
+    maintenanceFilters,
     refreshDashboard: refreshers.refreshDashboard,
     refreshOperationalData: refreshers.refreshOperationalData,
+    setEquipmentGroups,
+    setMaintenanceRecords,
     setMaintenanceSchedules,
     setMaintenanceStatus,
     showSuccess,
@@ -165,6 +188,7 @@ export function useWorkspaceController({
     setEditingEquipment,
     setEquipment,
     setEquipmentCatalogs,
+    setEquipmentGroups,
     setEquipmentFilters,
     setEquipmentFormMode,
     setEquipmentLoans,
@@ -178,6 +202,8 @@ export function useWorkspaceController({
     setLifeSheetStatus,
     setLocations,
     setMaintenanceCatalogs,
+    setMaintenanceFilters,
+    setMaintenanceRecords,
     setMaintenanceSchedules,
     setMaintenanceStatus,
     setRequestableEquipment,
@@ -192,6 +218,14 @@ export function useWorkspaceController({
     refreshers,
     showSuccess,
     user,
+  })
+
+  useRealtimeEquipmentLoans({
+    enabled: authStatus === 'authenticated' && permissions.canViewEquipmentLoans,
+    onRefresh: refreshers.refreshEquipmentLoans,
+    onUpsert: upsertEquipmentLoan,
+    showSuccess,
+    userId: user?.id ?? null,
   })
 
   const equipmentOperationsActions = createEquipmentOperationsActions({
@@ -244,6 +278,7 @@ export function useWorkspaceController({
       handleDownloadEquipmentImportTemplate: inventoryWorkspaceActions.handleDownloadEquipmentImportTemplate,
       handleExportEquipment: inventoryWorkspaceActions.handleExportEquipment,
       handleFinishSchedule: maintenanceActions.handleFinishSchedule,
+      refreshMaintenanceRecords: maintenanceActions.refreshMaintenanceRecords,
       handleImportEquipment: inventoryWorkspaceActions.handleImportEquipment,
       handleRestoreEquipment: inventoryWorkspaceActions.handleRestoreEquipment,
       handleRunAlertChecks: alertActions.handleRunAlertChecks,
@@ -261,13 +296,23 @@ export function useWorkspaceController({
       setActiveView,
       setIsEquipmentFormOpen,
       setIsScheduleFormOpen,
+      setMaintenanceFilters,
       startMaintenanceSchedule,
       acknowledgeAlert,
       ...equipmentOperationsActions,
       ...loanActions,
       ...settingsActions,
+      createEquipmentGroup: maintenanceActions.createEquipmentGroup,
+      deleteEquipmentGroup: maintenanceActions.deleteEquipmentGroup,
+      updateEquipmentGroup: maintenanceActions.updateEquipmentGroup,
+      updateMaintenanceReception: maintenanceActions.updateMaintenanceReception,
+      updateMaintenanceExecution: maintenanceActions.updateMaintenanceExecution,
+      updateMaintenanceClosure: maintenanceActions.updateMaintenanceClosure,
+      deleteMaintenanceAttachment: maintenanceActions.deleteMaintenanceAttachment,
+      uploadMaintenanceAttachment: maintenanceActions.uploadMaintenanceAttachment,
     },
     metrics,
+    chat,
     notifications: createWorkspaceControllerNotifications(notificationInbox),
     permissions,
     state: {
@@ -279,6 +324,7 @@ export function useWorkspaceController({
       equipment,
       equipmentCatalogs,
       equipmentFilters,
+      equipmentGroups,
       equipmentFormMode,
       equipmentLoans,
       equipmentLoansStatus,
@@ -293,6 +339,8 @@ export function useWorkspaceController({
       lifeSheet,
       lifeSheetStatus,
       maintenanceCatalogs,
+      maintenanceFilters,
+      maintenanceRecords,
       maintenanceSchedules,
       maintenanceStatus,
       selectedEquipmentId,

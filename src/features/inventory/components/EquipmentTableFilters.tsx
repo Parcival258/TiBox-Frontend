@@ -24,7 +24,7 @@ export function EquipmentTableFilters({
 }: EquipmentTableFiltersProps) {
   return (
     <form
-      className="grid gap-3 border-b border-slate-800 px-4 py-4 md:grid-cols-2 lg:grid-cols-[minmax(220px,1.5fr)_minmax(140px,1fr)_minmax(140px,1fr)_minmax(150px,1fr)_110px_auto]"
+      className="grid gap-3 border-b border-slate-800 px-4 py-4 sm:grid-cols-2 lg:grid-cols-[minmax(220px,1.5fr)_minmax(140px,1fr)_minmax(140px,1fr)_minmax(150px,1fr)_110px_auto]"
       onSubmit={onApplySearch}
     >
       <label className="block text-sm">
@@ -76,7 +76,7 @@ export function EquipmentTableFilters({
         ]}
         withEmptyOption={false}
       />
-      <div className="flex flex-wrap items-end gap-2 lg:flex-nowrap">
+      <div className="grid gap-2 sm:col-span-2 sm:flex sm:flex-wrap sm:items-end lg:col-span-1 lg:flex-nowrap">
         <button
           className="min-w-20 rounded-md border border-cyan-700 px-3 py-2 text-sm font-medium text-cyan-100 transition hover:border-cyan-400 hover:text-white"
           type="submit"

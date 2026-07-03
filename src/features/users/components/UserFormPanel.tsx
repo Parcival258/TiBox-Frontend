@@ -8,6 +8,7 @@ type UserFormPanelProps = {
   editingUser: User | null
   form: UserForm
   roles: RoleOption[]
+  submitError: string | null
   submitState: 'idle' | 'submitting' | 'error'
   onClose: () => void
   onFieldChange: <Key extends keyof UserForm>(key: Key, value: UserForm[Key]) => void
@@ -18,6 +19,7 @@ export function UserFormPanel({
   editingUser,
   form,
   roles,
+  submitError,
   submitState,
   onClose,
   onFieldChange,
@@ -77,7 +79,7 @@ export function UserFormPanel({
         />
         {submitState === 'error' && (
           <p className="rounded-md border border-red-900 bg-red-950/30 px-3 py-2 text-sm text-red-200 md:col-span-2">
-            No fue posible guardar el usuario. Revisa el correo, rol o permisos.
+            {submitError ?? 'No fue posible guardar el usuario. Revisa el correo, rol o permisos.'}
           </p>
         )}
         <div className="flex justify-end gap-2 md:col-span-2">

@@ -5,6 +5,7 @@ import { readImportRows } from './equipmentImportFileReaders'
 import {
   findImportHeadquarterId,
   findImportLocationId,
+  findImportLocationIdByParts,
   findImportResponsibleId,
 } from './equipmentImportCatalogLookup'
 import {
@@ -62,7 +63,16 @@ function rowToPayload(
   const storageCapacityGb = mapImportNumber(get('almacenamiento_gb'), rowNumber, rowErrors)
   const status = mapImportStatus(get('estado'), rowNumber, rowErrors)
   const headquarterId = findImportHeadquarterId(get('sede'), catalogs)
-  const locationId = findImportLocationId(get('ubicacion'), headquarterId, catalogs)
+  const locationId =
+    findImportLocationIdByParts(
+      {
+        area: get('area'),
+        floor: get('piso'),
+        office: get('oficina'),
+      },
+      headquarterId,
+      catalogs
+    ) ?? findImportLocationId(get('ubicacion'), headquarterId, catalogs)
   const currentResponsibleId = findImportResponsibleId(get('responsable'), catalogs)
   const secondaryResponsibleId = findImportResponsibleId(get('responsable_secundario'), catalogs)
 
@@ -70,8 +80,12 @@ function rowToPayload(
     rowErrors.push(`Fila ${rowNumber}: sede no encontrada (${get('sede')}).`)
   }
 
-  if (get('ubicacion') && !locationId) {
-    rowErrors.push(`Fila ${rowNumber}: ubicacion no encontrada (${get('ubicacion')}).`)
+  if ((get('piso') || get('area') || get('oficina') || get('ubicacion')) && !locationId) {
+    rowErrors.push(
+      `Fila ${rowNumber}: ubicacion no encontrada (${[get('piso'), get('area'), get('oficina')]
+        .filter(Boolean)
+        .join(' / ') || get('ubicacion')}).`
+    )
   }
 
   if (get('responsable') && !currentResponsibleId) {

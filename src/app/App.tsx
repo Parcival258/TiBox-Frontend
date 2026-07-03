@@ -2,9 +2,11 @@ import { AuthenticatedApp } from './AuthenticatedApp'
 import { LoginPanel, useSession } from '@/features/auth'
 import { LandingPage } from '@/features/landing'
 import { LoginLoader } from '@/shared/ui'
+import { Navigate, Route, Routes, useNavigate } from 'react-router'
 
 export default function App() {
   const session = useSession()
+  const navigate = useNavigate()
 
   if (session.status === 'checking') {
     return (
@@ -15,16 +17,21 @@ export default function App() {
   }
 
   if (session.status === 'guest' || session.status === 'submitting') {
-    if (!session.showLogin) {
-      return <LandingPage onEnter={session.openLogin} />
-    }
-
     return (
-      <LoginPanel
-        error={session.loginError}
-        isSubmitting={session.status === 'submitting'}
-        onSubmit={session.signIn}
-      />
+      <Routes>
+        <Route path="/" element={<LandingPage onEnter={() => navigate('/login')} />} />
+        <Route
+          path="/login"
+          element={(
+            <LoginPanel
+              error={session.loginError}
+              isSubmitting={session.status === 'submitting'}
+              onSubmit={session.signIn}
+            />
+          )}
+        />
+        <Route path="*" element={<Navigate replace to="/login" />} />
+      </Routes>
     )
   }
 

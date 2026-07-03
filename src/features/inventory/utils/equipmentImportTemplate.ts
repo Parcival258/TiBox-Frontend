@@ -5,9 +5,11 @@ import { equipmentImportTemplateHeaders } from './equipmentImportTypes'
 import { buildZip } from './equipmentImportZip'
 
 type ImportTemplateLists = {
+  areas: string[]
   brands: string[]
+  floors: string[]
   headquarters: string[]
-  locations: string[]
+  offices: string[]
   ownershipTypes: string[]
   responsibles: string[]
   statuses: string[]
@@ -36,11 +38,11 @@ function downloadBlob(fileName: string, content: BlobPart, type: string) {
 
 function createTemplateWorkbook(catalogs: EquipmentCatalogs | null) {
   const listValues: ImportTemplateLists = {
+    areas: uniqueValues(catalogs?.locations.map((item) => item.area ?? '') ?? []),
     brands: uniqueValues(catalogs?.brands ?? []),
+    floors: uniqueValues(catalogs?.locations.map((item) => item.floor ?? '') ?? []),
     headquarters: uniqueValues(catalogs?.headquarters.map((item) => item.name) ?? []),
-    locations: uniqueValues(catalogs?.locations.map((item) =>
-      [item.area, item.office, item.floor].filter(Boolean).join(' / ')
-    ) ?? []),
+    offices: uniqueValues(catalogs?.locations.map((item) => item.office ?? '') ?? []),
     ownershipTypes: uniqueValues(
       (catalogs?.ownershipTypes ?? ['owned', 'leased']).map(ownershipTypeLabel)
     ),
@@ -61,7 +63,9 @@ function createTemplateWorkbook(catalogs: EquipmentCatalogs | null) {
     listValues.statuses,
     listValues.ownershipTypes,
     listValues.headquarters,
-    listValues.locations,
+    listValues.floors,
+    listValues.areas,
+    listValues.offices,
     listValues.responsibles,
     listValues.types,
     listValues.brands,
@@ -91,25 +95,27 @@ function equipmentSheetXml(lists: ImportTemplateLists) {
 
   return xmlFile(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
-  <dimension ref="A1:W200"/>
+  <dimension ref="A1:Y200"/>
   <sheetViews><sheetView workbookViewId="0"/></sheetViews>
   <sheetFormatPr defaultRowHeight="15"/>
   <cols>
-    <col min="1" max="23" width="22" customWidth="1"/>
+    <col min="1" max="25" width="22" customWidth="1"/>
   </cols>
   <sheetData>
     <row r="1">${headerCells}</row>
     <row r="2">${emptyRowCells}</row>
   </sheetData>
-  <dataValidations count="8">
-    ${dataValidationXml('C2:C200', 'F', lists.types.length, 'tipo')}
-    ${dataValidationXml('E2:E200', 'G', lists.brands.length, 'marca')}
+  <dataValidations count="9">
+    ${dataValidationXml('C2:C200', 'H', lists.types.length, 'tipo')}
+    ${dataValidationXml('E2:E200', 'I', lists.brands.length, 'marca')}
     ${dataValidationXml('G2:G200', 'A', lists.statuses.length, 'estado')}
     ${dataValidationXml('H2:H200', 'B', lists.ownershipTypes.length, 'propiedad')}
     ${dataValidationXml('I2:I200', 'C', lists.headquarters.length, 'sede')}
-    ${dataValidationXml('J2:J200', 'D', lists.locations.length, 'ubicacion')}
-    ${dataValidationXml('K2:K200', 'E', lists.responsibles.length, 'responsable')}
-    ${dataValidationXml('L2:L200', 'E', lists.responsibles.length, 'responsable secundario')}
+    ${dataValidationXml('J2:J200', 'D', lists.floors.length, 'piso')}
+    ${dataValidationXml('K2:K200', 'E', lists.areas.length, 'area')}
+    ${dataValidationXml('L2:L200', 'F', lists.offices.length, 'oficina')}
+    ${dataValidationXml('M2:M200', 'G', lists.responsibles.length, 'responsable')}
+    ${dataValidationXml('N2:N200', 'G', lists.responsibles.length, 'responsable secundario')}
   </dataValidations>
   <pageMargins left="0.7" right="0.7" top="0.75" bottom="0.75" header="0.3" footer="0.3"/>
 </worksheet>`)
@@ -123,12 +129,14 @@ function dataValidationXml(range: string, listColumn: string, listLength: number
 
 function listsSheetXml(lists: ImportTemplateLists, rowCount: number) {
   const rows = [
-    ['estado', 'propiedad', 'sede', 'ubicacion', 'responsable', 'tipo', 'marca'],
+    ['estado', 'propiedad', 'sede', 'piso', 'area', 'oficina', 'responsable', 'tipo', 'marca'],
     ...Array.from({ length: rowCount }, (_, index) => [
       lists.statuses[index] ?? '',
       lists.ownershipTypes[index] ?? '',
       lists.headquarters[index] ?? '',
-      lists.locations[index] ?? '',
+      lists.floors[index] ?? '',
+      lists.areas[index] ?? '',
+      lists.offices[index] ?? '',
       lists.responsibles[index] ?? '',
       lists.types[index] ?? '',
       lists.brands[index] ?? '',

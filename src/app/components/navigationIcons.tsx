@@ -4,8 +4,10 @@ export type NavigationIconName =
   | 'settings'
   | 'calendar'
   | 'cases'
+  | 'chat'
   | 'inventory'
   | 'loans'
+  | 'logs'
   | 'logout'
   | 'panelClose'
   | 'panelOpen'
@@ -75,6 +77,29 @@ export function NavigationIcon({ name }: { name: NavigationIconName }) {
       <svg {...commonProps}>
         <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
         <path d="M10 21h4" />
+      </svg>
+    )
+  }
+
+  if (name === 'chat') {
+    return (
+      <svg {...commonProps} className="h-6 w-6 cir-rail__chat-svg" strokeWidth={2}>
+        <path d="M0 0h24v24H0z" stroke="none" />
+        <path d="M8 9h8" />
+        <path d="M8 13h6" />
+        <path d="M18 4a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3h-5l-5 3v-3h-2a3 3 0 0 1-3-3v-8a3 3 0 0 1 3-3h12z" />
+      </svg>
+    )
+  }
+
+  if (name === 'logs') {
+    return (
+      <svg {...commonProps}>
+        <path d="M7 3h7l4 4v14H7z" />
+        <path d="M14 3v5h5" />
+        <path d="M10 13h6" />
+        <path d="M10 17h4" />
+        <path d="M4 7v14" />
       </svg>
     )
   }

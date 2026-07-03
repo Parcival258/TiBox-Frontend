@@ -42,12 +42,14 @@ export function Input({
 }
 
 export function Select({
+  disabled,
   label,
   onChange,
   options,
   required,
   value,
 }: {
+  disabled?: boolean
   label: string
   onChange: (value: string) => void
   options: Array<{ label: string; value: string }>
@@ -58,7 +60,8 @@ export function Select({
     <label className="block text-sm">
       <span className="text-slate-500">{label}</span>
       <select
-        className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-200 outline-none transition focus:border-cyan-500"
+        className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-200 outline-none transition focus:border-cyan-500 disabled:cursor-not-allowed disabled:opacity-50"
+        disabled={disabled}
         required={required}
         value={value}
         onChange={(event) => onChange(event.target.value)}

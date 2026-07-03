@@ -32,6 +32,7 @@ export function AppOverlays({ confirmation, workspace }: AppOverlaysProps) {
         catalogs={state.maintenanceCatalogs}
         equipment={state.equipment}
         equipmentCatalogs={state.equipmentCatalogs}
+        equipmentGroups={state.equipmentGroups}
         isOpen={state.isScheduleFormOpen}
         onClose={() => actions.setIsScheduleFormOpen(false)}
         onSubmit={actions.handleCreateSchedule}

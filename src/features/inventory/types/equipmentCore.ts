@@ -13,9 +13,13 @@ export type Equipment = {
   storageCapacityGb: number | null
   ownershipType: 'owned' | 'leased'
   status: string
+  headquarterId?: string | null
   headquarter: { name: string } | null
-  location: { area: string | null; office: string | null } | null
+  locationId?: string | null
+  location: { area: string | null; floor: string | null; office: string | null } | null
+  currentResponsibleId?: string | null
   currentResponsible: { name: string } | null
+  secondaryResponsibleId?: string | null
   secondaryResponsible: { name: string } | null
   purchaseDate?: string | null
   warrantyUntil?: string | null

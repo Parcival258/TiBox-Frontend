@@ -18,6 +18,7 @@ type AlertRealtimePayload = {
 type UseRealtimeAlertsOptions = {
   canHandleFailureQueue: boolean
   canManageAlerts: boolean
+  canManageLoanRequests: boolean
   canTrackReportedTickets: boolean
   canViewAlerts: boolean
   enabled: boolean
@@ -50,6 +51,7 @@ const alertEvents: AlertRealtimeEvent[] = [
 export function useRealtimeAlerts({
   canHandleFailureQueue,
   canManageAlerts,
+  canManageLoanRequests,
   canTrackReportedTickets,
   canViewAlerts,
   enabled,
@@ -100,8 +102,10 @@ export function useRealtimeAlerts({
             const isUnassignedFailure =
               payload.alert.type === 'damaged_equipment_reported' && !payload.alert.assignedTo
             const isReportedByCurrentUser = payload.alert.metadata?.reportedBy === userId
+            const isLoanRequest = payload.alert.type === 'equipment_loan_requested'
             const isRelevant =
               canManageAlerts ||
+              (canManageLoanRequests && isLoanRequest) ||
               isAssignedToCurrentUser ||
               (canHandleFailureQueue && isUnassignedFailure) ||
               (canTrackReportedTickets && isReportedByCurrentUser)
@@ -118,7 +122,10 @@ export function useRealtimeAlerts({
 
             if (
               payload.event === 'alerts:created' &&
-              (isAssignedToCurrentUser || isUnassignedFailure)
+              (canManageAlerts ||
+                (canManageLoanRequests && isLoanRequest) ||
+                isAssignedToCurrentUser ||
+                isUnassignedFailure)
             ) {
               callbacksRef.current.onNotify({
                 subText: payload.alert.message,
@@ -153,6 +160,7 @@ export function useRealtimeAlerts({
   }, [
     canHandleFailureQueue,
     canManageAlerts,
+    canManageLoanRequests,
     canTrackReportedTickets,
     canViewAlerts,
     enabled,

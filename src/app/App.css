@@ -4,7 +4,17 @@ body {
 
 .app-view-transition {
   animation: app-view-enter 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  min-width: 0;
   transform-origin: top center;
+  width: 100%;
+}
+
+.app-shell {
+  min-width: 0;
+}
+
+.app-shell > * {
+  min-width: 0;
 }
 
 @keyframes app-view-enter {
