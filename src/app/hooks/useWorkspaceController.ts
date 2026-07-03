@@ -85,6 +85,7 @@ export function useWorkspaceController({
   )
   const chat = useChatState({
     authStatus,
+    isChatViewActive: activeView === 'chat',
     onNotify: notificationInbox.addNotification,
     userId: user?.id ?? null,
   })

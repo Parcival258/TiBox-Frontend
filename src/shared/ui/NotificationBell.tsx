@@ -7,12 +7,14 @@ type NotificationBellProps = {
   unreadCount: number
   onClear: () => void
   onMarkAllRead: () => void
+  onOpenNotification?: (notification: NotificationItem) => void
 }
 
 export function NotificationBell({
   notifications,
   onClear,
   onMarkAllRead,
+  onOpenNotification,
   unreadCount,
 }: NotificationBellProps) {
   const [isOpen, setIsOpen] = useState(false)
@@ -69,7 +71,15 @@ export function NotificationBell({
                   className="border-b border-slate-800 px-3 py-3 last:border-b-0"
                   key={notification.id}
                 >
-                  <div className="flex items-start gap-2">
+                  <button
+                    className="flex w-full items-start gap-2 text-left disabled:cursor-default"
+                    disabled={!notification.action || !onOpenNotification}
+                    type="button"
+                    onClick={() => {
+                      setIsOpen(false)
+                      onOpenNotification?.(notification)
+                    }}
+                  >
                     {!notification.readAt && (
                       <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-cyan-400" />
                     )}
@@ -84,7 +94,7 @@ export function NotificationBell({
                         {formatDateTime(notification.createdAt)}
                       </p>
                     </div>
-                  </div>
+                  </button>
                 </article>
               ))}
             </div>

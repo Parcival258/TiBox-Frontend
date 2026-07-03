@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent, type MouseEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent, type MouseEvent } from 'react'
 import type { ConfirmAction } from '@/app/hooks/useConfirmAction'
 import {
   ContextActionMenu,
@@ -67,6 +67,24 @@ export function ChatPage({ chat, currentUserId, requestConfirmation }: ChatPageP
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([])
   const [userSearch, setUserSearch] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const messagesContainerRef = useRef<HTMLDivElement | null>(null)
+  const lastMessageId = chat.activeMessages.at(-1)?.id
+
+  useEffect(() => {
+    if (!chat.activeConversationId) {
+      return
+    }
+
+    const frameId = window.requestAnimationFrame(() => {
+      const container = messagesContainerRef.current
+
+      if (container) {
+        container.scrollTop = container.scrollHeight
+      }
+    })
+
+    return () => window.cancelAnimationFrame(frameId)
+  }, [chat.activeConversationId, chat.messagesStatus, lastMessageId])
 
   const filteredContacts = useMemo(() => {
     const normalizedSearch = userSearch.trim().toLowerCase()
@@ -335,7 +353,7 @@ export function ChatPage({ chat, currentUserId, requestConfirmation }: ChatPageP
                 </div>
               </header>
 
-              <div className="chat-page__messages">
+              <div className="chat-page__messages" ref={messagesContainerRef}>
                 <div className="chat-page__message-pattern" />
                 <div className="chat-page__message-list">
                   {chat.messagesStatus === 'loading' && (

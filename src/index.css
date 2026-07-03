@@ -15,6 +15,7 @@ body {
   min-height: 100vh;
   margin: 0;
   overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
 }
 
 img,
@@ -28,6 +29,31 @@ input,
 select,
 textarea {
   max-width: 100%;
+}
+
+button,
+select,
+input,
+textarea {
+  font: inherit;
+}
+
+@supports (padding: max(0px)) {
+  .app-shell {
+    padding-top: max(0.75rem, env(safe-area-inset-top));
+    padding-left: max(0.75rem, env(safe-area-inset-left));
+    padding-right: max(0.75rem, env(safe-area-inset-right));
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+}
+
+@media (max-width: 640px) {
+  button,
+  input,
+  select,
+  textarea {
+    min-height: 42px;
+  }
 }
 
 html[data-density='compact'] .app-shell {

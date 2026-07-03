@@ -11,22 +11,22 @@ const sizeStyles: Record<
   { grid: string; card: string; label: string; value: string }
 > = {
   compact: {
-    card: 'p-3',
-    grid: 'gap-2 py-4',
+    card: 'p-3 sm:p-3',
+    grid: 'grid-cols-2 gap-2 py-3 sm:py-4',
     label: 'text-xs',
     value: 'mt-1 text-2xl',
   },
   large: {
-    card: 'p-5',
-    grid: 'gap-4 py-7',
-    label: 'text-base',
-    value: 'mt-3 text-4xl',
+    card: 'p-3 sm:p-5',
+    grid: 'grid-cols-2 gap-2 py-3 sm:gap-4 sm:py-7',
+    label: 'text-xs sm:text-base',
+    value: 'mt-1 text-2xl sm:mt-3 sm:text-4xl',
   },
   medium: {
-    card: 'p-4',
-    grid: 'gap-3 py-6',
-    label: 'text-sm',
-    value: 'mt-2 text-3xl',
+    card: 'p-3 sm:p-4',
+    grid: 'grid-cols-2 gap-2 py-3 sm:gap-3 sm:py-6',
+    label: 'text-xs sm:text-sm',
+    value: 'mt-1 text-2xl sm:mt-2 sm:text-3xl',
   },
 }
 
@@ -50,8 +50,8 @@ export function MetricGrid({ dashboard, size }: MetricGridProps) {
           key={label}
           className={`rounded-lg border border-slate-800 bg-slate-900 ${styles.card}`}
         >
-          <p className={`${styles.label} text-slate-400`}>{label}</p>
-          <p className={`${styles.value} font-semibold text-white`}>{value}</p>
+          <p className={`${styles.label} min-h-8 text-slate-400 sm:min-h-0`}>{label}</p>
+          <p className={`${styles.value} font-semibold leading-none text-white`}>{value}</p>
         </article>
       ))}
     </section>

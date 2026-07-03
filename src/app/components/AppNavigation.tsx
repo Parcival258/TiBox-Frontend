@@ -41,7 +41,7 @@ export function AppNavigation({
     <aside className={isCollapsed ? 'app-sidebar app-sidebar--collapsed' : 'app-sidebar'}>
       <div className={isCollapsed ? 'cir-rail cir-rail--collapsed' : 'cir-rail'}>
         <div className="cir-rail__head">
-          <div className={isCollapsed ? 'sr-only' : 'cir-rail__title'}>
+          <div className={isCollapsed ? 'cir-rail__title cir-rail__title--collapsed' : 'cir-rail__title'}>
             <p>TIBOX</p>
           </div>
           <button

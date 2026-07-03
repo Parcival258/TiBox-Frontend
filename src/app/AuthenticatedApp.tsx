@@ -41,6 +41,13 @@ export function AuthenticatedApp({ authStatus, onLogout, user }: AuthenticatedAp
     })
   }
 
+  function handleOpenNotification(notification: typeof notifications.items[number]) {
+    if (notification.action?.type === 'chat' && notification.action.conversationId) {
+      actions.setActiveView('chat')
+      void workspace.chat.openConversation(notification.action.conversationId)
+    }
+  }
+
   const requestedView = viewFromPath(location.pathname)
   const canOpenRequestedView =
     requestedView !== null &&
@@ -57,7 +64,7 @@ export function AuthenticatedApp({ authStatus, onLogout, user }: AuthenticatedAp
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100">
-      <div className="app-shell flex min-h-screen w-full flex-col gap-4 px-3 py-3 sm:gap-6 sm:px-6 sm:py-6 lg:flex-row xl:px-8">
+      <div className="app-shell flex min-h-screen w-full flex-col gap-3 px-3 py-2 sm:gap-6 sm:px-6 sm:py-6 lg:flex-row xl:px-8">
         <AppNavigation
           key={location.pathname}
           alertAttentionCount={metrics.alertAttentionCount}
@@ -80,6 +87,7 @@ export function AuthenticatedApp({ authStatus, onLogout, user }: AuthenticatedAp
             unreadNotifications={notifications.unreadCount}
             onClearNotifications={notifications.clear}
             onMarkNotificationsRead={notifications.markAllAsRead}
+            onOpenNotification={handleOpenNotification}
           />
           {preferences.showDashboardStats && (
             <MetricGrid dashboard={state.dashboard} size={preferences.dashboardStatsSize} />

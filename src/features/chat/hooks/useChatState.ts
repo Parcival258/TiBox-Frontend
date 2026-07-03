@@ -14,6 +14,10 @@ import {
 import type { ChatConversation, ChatMessage, ChatStateStatus, ChatUser } from '../types'
 
 type ChatNotification = {
+  action?: {
+    conversationId?: string
+    type: 'chat'
+  }
   subText?: string
   title: string
   type: 'alert' | 'ticket' | 'system'
@@ -21,6 +25,7 @@ type ChatNotification = {
 
 type UseChatStateOptions = {
   authStatus: string
+  isChatViewActive: boolean
   onNotify: (notification: ChatNotification) => void
   userId: string | null
 }
@@ -73,7 +78,7 @@ function replaceMessage(messages: ChatMessage[], temporaryId: string, message: C
     : [...withoutTemporary, message]
 }
 
-export function useChatState({ authStatus, onNotify, userId }: UseChatStateOptions) {
+export function useChatState({ authStatus, isChatViewActive, onNotify, userId }: UseChatStateOptions) {
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null)
   const [contacts, setContacts] = useState<ChatUser[]>([])
   const [conversations, setConversations] = useState<ChatConversation[]>([])
@@ -81,11 +86,16 @@ export function useChatState({ authStatus, onNotify, userId }: UseChatStateOptio
   const [status, setStatus] = useState<ChatStateStatus>('idle')
   const [messagesStatus, setMessagesStatus] = useState<ChatStateStatus>('idle')
   const activeConversationIdRef = useRef<string | null>(null)
+  const isChatViewActiveRef = useRef(isChatViewActive)
   const onNotifyRef = useRef(onNotify)
 
   useEffect(() => {
     activeConversationIdRef.current = activeConversationId
   }, [activeConversationId])
+
+  useEffect(() => {
+    isChatViewActiveRef.current = isChatViewActive
+  }, [isChatViewActive])
 
   useEffect(() => {
     onNotifyRef.current = onNotify
@@ -314,17 +324,22 @@ export function useChatState({ authStatus, onNotify, userId }: UseChatStateOptio
 
         socket.on('chat:message_created', (payload: ChatMessageCreatedPayload) => {
           const activeId = activeConversationIdRef.current
+          const canReadActiveConversation = isChatViewActiveRef.current && activeId === payload.message.conversationId
           setConversations((current) => upsertConversation(current, payload.conversation))
 
-          if (payload.message.senderId !== userId && activeId !== payload.message.conversationId) {
+          if (payload.message.senderId !== userId && !canReadActiveConversation) {
             onNotifyRef.current({
+              action: {
+                conversationId: payload.message.conversationId,
+                type: 'chat',
+              },
               subText: payload.message.body,
               title: payload.conversation.displayName,
               type: 'system',
             })
           }
 
-          if (activeId === payload.message.conversationId) {
+          if (canReadActiveConversation) {
             setMessagesByConversation((current) => ({
               ...current,
               [payload.message.conversationId]: upsertMessage(

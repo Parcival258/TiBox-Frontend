@@ -34,7 +34,7 @@ export function EquipmentTableToolbar({
   return (
     <div className="flex flex-col gap-3 border-b border-slate-800 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
       <h2 className="text-base font-medium text-white">Inventario de equipos</h2>
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="grid gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
         <span className="text-sm text-slate-400">{totalRecords} registros</span>
         {canCreate && (
           <>
@@ -61,7 +61,7 @@ export function EquipmentTableToolbar({
               onChange={onImportEquipment}
             />
             {pendingImportFileName && (
-              <div className="flex max-w-full items-center gap-2 rounded-md border border-slate-700 bg-slate-950 px-2 py-1.5 text-xs">
+              <div className="grid max-w-full gap-2 rounded-md border border-slate-700 bg-slate-950 px-2 py-1.5 text-xs sm:flex sm:items-center">
                 <span className="max-w-48 truncate text-slate-300">{pendingImportFileName}</span>
                 <button
                   className="text-slate-400 transition hover:text-red-200"

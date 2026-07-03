@@ -192,7 +192,7 @@ export function UserManagementPage({
     })
   }
 
-  function openContextMenu(user: User, event: MouseEvent<HTMLTableRowElement>) {
+  function openContextMenu(user: User, event: MouseEvent<HTMLElement>) {
     event.preventDefault()
     const isActive = user.isActive ?? true
 
