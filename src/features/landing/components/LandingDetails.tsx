@@ -10,12 +10,12 @@ export function LandingDetails() {
             Contacto
           </p>
           <h2 className="mt-3 text-2xl font-semibold text-white">Canales de soporte</h2>
-          <div className="mt-6 grid gap-4 sm:grid-cols-2">
+          <dl className="mt-6 grid gap-4 sm:grid-cols-2">
             <InfoItem label="Correo" value="andreslasso250@gmail.com" />
             <InfoItem label="Telefono" value="1234567890" />
             <InfoItem label="Horario" value="24/7" />
-            <InfoItem label="Ubicacion" value="Pasto/Nariño" />
-          </div>
+            <InfoItem label="Ubicacion" value="Pasto/Narino" />
+          </dl>
         </div>
 
         <div className="border-l border-slate-800 pl-0 lg:pl-8">

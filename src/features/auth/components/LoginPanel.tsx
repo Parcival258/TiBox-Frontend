@@ -1,6 +1,7 @@
 import { type FormEvent, useState } from 'react'
 import { LoginLoader } from '@/shared/ui/Loaders'
 import { StarryBackdrop } from '@/shared/ui/StarryBackdrop'
+import { Link } from 'react-router'
 
 type LoginPanelProps = {
   isSubmitting: boolean
@@ -29,6 +30,13 @@ export function LoginPanel({ isSubmitting, error, onSubmit }: LoginPanelProps) {
         className="relative z-10 w-full max-w-sm rounded-lg border border-slate-800 bg-slate-900/90 p-6 shadow-2xl shadow-slate-950/40 backdrop-blur"
         onSubmit={handleSubmit}
       >
+        <Link
+          className="absolute right-4 top-4 rounded-md border border-slate-700 px-3 py-1.5 text-xs font-semibold text-slate-200 transition hover:border-cyan-400 hover:text-cyan-200"
+          to="/"
+        >
+          Volver
+        </Link>
+
         <p className="text-sm font-medium uppercase tracking-wide text-cyan-300">
           TIBOX
         </p>

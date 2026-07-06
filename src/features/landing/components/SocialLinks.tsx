@@ -12,7 +12,7 @@ export function SocialLinks() {
         Redes
       </p>
       <div className="mt-5 flex items-center gap-4">
-        <SocialButton href={socialLinks.github} label="" variant="github">
+        <SocialButton href={socialLinks.github} label="GitHub" variant="github">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
@@ -29,7 +29,7 @@ export function SocialLinks() {
           </svg>
         </SocialButton>
 
-        <SocialButton href={socialLinks.linkedin} label="" variant="linkedin">
+        <SocialButton href={socialLinks.linkedin} label="LinkedIn" variant="linkedin">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="1em"
